@@ -23,3 +23,5 @@ flags:
 - long: --window
   short: -w
   help: Capture screenshot of the active window
+- long: --no-copy
+  help: Skip copying screenshot to clipboard

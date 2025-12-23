@@ -9,6 +9,10 @@ pointer_enabled=false
 if [[ $pointer_default == true ]] || [[ ${args[--pointer]} ]]; then
   pointer_enabled=true
 fi
+copy_enabled=true
+if [[ ${args[--no-copy]} ]]; then
+  copy_enabled=false
+fi
 window_capture=false
 if [[ ${args[--window]} ]]; then
   window_capture=true
@@ -32,4 +36,7 @@ if [[ ${args[--annotate]} ]]; then
   cmd="$cmd && satty --filename \"$filepath\" --output-filename \"$filepath\" --actions-on-enter save-to-file --early-exit --disable-notifications"
 fi
 eval "$cmd"
+if [[ $copy_enabled == true ]]; then
+  wl-copy < "$filepath"
+fi
 notify-send "Screenshot saved" "$filepath"
