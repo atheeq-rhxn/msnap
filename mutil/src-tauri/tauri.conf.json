@@ -1,0 +1,47 @@
+{
+  "$schema": "https://schema.tauri.app/config/2",
+  "productName": "mutil",
+  "version": "0.1.0",
+  "identifier": "com.atheeq.mutil",
+  "build": {
+    "beforeDevCommand": "bun run dev",
+    "devUrl": "http://localhost:1420",
+    "beforeBuildCommand": "bun run build",
+    "frontendDist": "../dist"
+  },
+  "app": {
+    "withGlobalTauri": true,
+    "enableGTKAppId": false,
+    "windows": [
+      {
+        "title": "mutil",
+        "width": 280,
+        "height": 204,
+        "minWidth": 280,
+        "minHeight": 204,
+        "maxWidth": 280,
+        "maxHeight": 280,
+        "decorations": false,
+        "resizable": false,
+        "fullscreen": false,
+        "alwaysOnTop": true,
+        "center": true,
+        "transparent": true
+      }
+    ],
+    "security": {
+      "csp": null
+    }
+  },
+  "bundle": {
+    "active": true,
+    "targets": "all",
+    "icon": [
+      "icons/32x32.png",
+      "icons/128x128.png",
+      "icons/128x128@2x.png",
+      "icons/icon.icns",
+      "icons/icon.ico"
+    ]
+  }
+}
