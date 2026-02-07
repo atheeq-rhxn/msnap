@@ -2,9 +2,9 @@ import { useEffect, useRef } from "react";
 import { getCurrentWindow } from "@tauri-apps/api/window";
 import type { SelectionType } from "@/types/capture";
 
-const WIDTH = 280;
-const BASE_HEIGHT = 204;
-const DROPDOWN_HEIGHT = 52;
+const WIDTH = 320;
+const BASE_HEIGHT = 240;
+const DROPDOWN_HEIGHT = 44;
 
 export function useWindowResize(selectionType: SelectionType) {
   const currentHeightRef = useRef(BASE_HEIGHT);

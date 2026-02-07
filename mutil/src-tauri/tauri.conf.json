@@ -15,18 +15,19 @@
     "windows": [
       {
         "title": "mutil",
-        "width": 280,
-        "height": 204,
-        "minWidth": 280,
-        "minHeight": 204,
-        "maxWidth": 280,
-        "maxHeight": 280,
+        "width": 320,
+        "height": 240,
+        "minWidth": 320,
+        "minHeight": 240,
+        "maxWidth": 320,
+        "maxHeight": 290,
         "decorations": false,
         "resizable": false,
         "fullscreen": false,
         "alwaysOnTop": true,
         "center": true,
-        "transparent": true
+        "transparent": true,
+        "skipTaskbar": true
       }
     ],
     "security": {

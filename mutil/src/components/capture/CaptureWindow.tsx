@@ -1,5 +1,4 @@
 import { useState } from "react";
-import { X } from "lucide-react";
 import { ModeToggle } from "./ModeToggle";
 import { SelectionTabs } from "./SelectionTabs";
 import { SourceSelect } from "./SourceSelect";
@@ -16,7 +15,6 @@ export function CaptureWindow({ onClose }: CaptureWindowProps) {
   const [selectionType, setSelectionType] = useState<SelectionType>('region');
   const [selectedSource, setSelectedSource] = useState<string>('');
 
-  // Hook to resize window based on selection type
   useWindowResize(selectionType);
 
   const handleSelectionChange = (newType: SelectionType) => {
@@ -29,38 +27,19 @@ export function CaptureWindow({ onClose }: CaptureWindowProps) {
   };
 
   return (
-    <div className="w-full h-full rounded-xl bg-card border shadow-lg p-4 relative">
-      {/* Close button */}
-      <button
-        onClick={onClose}
-        className="absolute top-3 right-3 p-1.5 rounded-md text-muted-foreground hover:text-foreground hover:bg-muted transition-colors z-10"
-        aria-label="Close"
-      >
-        <X className="w-4 h-4" />
-      </button>
+    <div className="w-full h-full flex items-center justify-center [padding:0.375rem]">
+      <div className="w-full rounded-xl bg-card border shadow-xl [padding:0.75rem]">
+        <div className="flex flex-col gap-3">
+          <ModeToggle value={mode} onChange={setMode} />
 
-      <div className="flex flex-col gap-3 h-full">
-        {/* Mode Toggle */}
-        <ModeToggle value={mode} onChange={setMode} />
+          <SelectionTabs value={selectionType} onChange={handleSelectionChange} />
 
-        {/* Divider */}
-        <div className="h-px bg-border" />
+          <SourceSelect
+            selectionType={selectionType}
+            value={selectedSource}
+            onChange={setSelectedSource}
+          />
 
-        {/* Selection Tabs */}
-        <SelectionTabs value={selectionType} onChange={handleSelectionChange} />
-
-        {/* Source Select - only for Window/Screen */}
-        <SourceSelect
-          selectionType={selectionType}
-          value={selectedSource}
-          onChange={setSelectedSource}
-        />
-
-        {/* Divider */}
-        <div className="h-px bg-border" />
-
-        {/* Capture Button - centered in remaining space */}
-        <div className="flex-1 flex items-center justify-center">
           <CaptureButton mode={mode} onClick={handleCapture} />
         </div>
       </div>

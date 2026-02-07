@@ -45,13 +45,13 @@ export function SourceSelect({ selectionType, value, onChange }: SourceSelectPro
   return (
     <div className="animate-in fade-in slide-in-from-top-1 duration-200">
       <Select value={value} onValueChange={handleValueChange}>
-        <SelectTrigger className="w-full h-10">
-          <Icon className="w-4 h-4 mr-2 text-muted-foreground" />
+        <SelectTrigger className="w-full h-8 text-xs rounded-lg [padding:0_0.75rem]">
+          <Icon className="w-3.5 h-3.5 [margin-right:0.5rem] text-muted-foreground" aria-hidden="true" />
           <SelectValue placeholder={placeholder} />
         </SelectTrigger>
         <SelectContent>
           {options.map((option) => (
-            <SelectItem key={option.id} value={option.id}>
+            <SelectItem key={option.id} value={option.id} className="text-xs">
               {option.name}
               {'resolution' in option && option.resolution ? ` (${option.resolution})` : ''}
             </SelectItem>
