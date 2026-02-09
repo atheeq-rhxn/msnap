@@ -38,7 +38,13 @@ PanelWindow {
 
   // Reset region selection when mode changes
   onCaptureModeChanged: isRegionSelected = false
-  onIsScreenshotModeChanged: isRegionSelected = false
+  onIsScreenshotModeChanged: {
+    isRegionSelected = false
+    // Switch away from window mode when entering recording mode
+    if (!isScreenshotMode && captureMode === "window") {
+      captureMode = "region"
+    }
+  }
 
   // ===== RECORDING STATE =====
   property bool isRecordingActive: false
@@ -464,12 +470,15 @@ PanelWindow {
             Rectangle {
               Layout.preferredWidth: 78
               Layout.preferredHeight: 64
-              color: captureMode === "window"
-                       ? Qt.rgba(accentColor.r, accentColor.g, accentColor.b, 0.15)
-                       : surfaceColor
+              color: !isScreenshotMode
+                       ? Qt.rgba(textMuted.r, textMuted.g, textMuted.b, 0.3)
+                       : (captureMode === "window"
+                           ? Qt.rgba(accentColor.r, accentColor.g, accentColor.b, 0.15)
+                           : surfaceColor)
               radius: 8
-              border.width: captureMode === "window" ? 2 : 0
+              border.width: captureMode === "window" && isScreenshotMode ? 2 : 0
               border.color: accentColor
+              opacity: !isScreenshotMode ? 0.5 : 1.0
 
               ColumnLayout {
                 anchors.centerIn: parent
@@ -478,21 +487,26 @@ PanelWindow {
                 Text {
                   Layout.alignment: Qt.AlignHCenter
                   text: "□"
-                  color: captureMode === "window" ? accentColor : textColor
+                  color: !isScreenshotMode
+                           ? textMuted
+                           : (captureMode === "window" ? accentColor : textColor)
                   font.pixelSize: 20
                 }
 
                 Text {
                   Layout.alignment: Qt.AlignHCenter
                   text: "Window"
-                  color: captureMode === "window" ? accentColor : textMuted
+                  color: !isScreenshotMode
+                           ? textMuted
+                           : (captureMode === "window" ? accentColor : textMuted)
                   font.pixelSize: 11
-                  font.bold: captureMode === "window"
+                  font.bold: captureMode === "window" && isScreenshotMode
                 }
               }
 
               MouseArea {
                 anchors.fill: parent
+                enabled: isScreenshotMode
                 onClicked: captureMode = "window"
               }
             }
