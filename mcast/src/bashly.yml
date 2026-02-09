@@ -5,7 +5,11 @@ version: 0.1.0
 flags:
 - long: --region
   short: -r
-  help: Record selected region
+  help: Record selected region (interactive selection)
+- long: --geometry
+  short: -g
+  arg: spec
+  help: Record region with direct geometry in "x,y wxh" format
 - long: --backend
   short: -b
   arg: recorder

@@ -28,6 +28,8 @@ if [[ $window_capture == true ]]; then
     exit 1
   fi
   cmd="$cmd -g \"$geometry\""
+elif [[ ${args[--geometry]} ]]; then
+  cmd="$cmd -g \"${args[--geometry]}\""
 elif [[ ${args[--region]} ]]; then
   cmd="$cmd -g \"\$(slurp -d)\""
 fi

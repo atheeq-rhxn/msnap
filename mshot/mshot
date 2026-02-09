@@ -42,6 +42,8 @@ root_command() {
       exit 1
     fi
     cmd="$cmd -g \"$geometry\""
+  elif [[ ${args[--geometry]} ]]; then
+    cmd="$cmd -g \"${args[--geometry]}\""
   elif [[ ${args[--region]} ]]; then
     cmd="$cmd -g \"\$(slurp -d)\""
   fi
@@ -83,7 +85,12 @@ mshot_usage() {
     # :command.usage_flags
     # :flag.usage
     printf "  %s\n" "--region, -r"
-    printf "    Take screenshot of selected region\n"
+    printf "    Take screenshot of selected region (interactive selection)\n"
+    echo
+
+    # :flag.usage
+    printf "  %s\n" "--geometry, -g SPEC"
+    printf "    Capture region with direct geometry in \"x,y wxh\" format\n"
     echo
 
     # :flag.usage
@@ -311,6 +318,20 @@ parse_requirements() {
         # :flag.case_no_arg
         args['--region']=1
         shift
+        ;;
+
+      # :flag.case
+      --geometry | -g)
+
+        # :flag.case_arg
+        if [[ -n ${2+x} ]]; then
+          args['--geometry']="$2"
+          shift
+          shift
+        else
+          printf "%s\n" "--geometry requires an argument: --geometry, -g SPEC" >&2
+          exit 1
+        fi
         ;;
 
       # :flag.case

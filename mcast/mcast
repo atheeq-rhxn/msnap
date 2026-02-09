@@ -26,7 +26,9 @@ root_command() {
 
   build_cmd() {
     local geometry=""
-    if [[ ${args[--region]:-} ]]; then
+    if [[ ${args[--geometry]} ]]; then
+      geometry="${args[--geometry]}"
+    elif [[ ${args[--region]} ]]; then
       geometry="$(slurp -d)" || { echo "Error: Failed to select region"; exit 1; }
     fi
 
@@ -117,7 +119,12 @@ mcast_usage() {
     # :command.usage_flags
     # :flag.usage
     printf "  %s\n" "--region, -r"
-    printf "    Record selected region\n"
+    printf "    Record selected region (interactive selection)\n"
+    echo
+
+    # :flag.usage
+    printf "  %s\n" "--geometry, -g SPEC"
+    printf "    Record region with direct geometry in \"x,y wxh\" format\n"
     echo
 
     # :flag.usage
@@ -128,7 +135,7 @@ mcast_usage() {
 
     # :flag.usage
     printf "  %s\n" "--toggle, -t"
-    printf "    Toggle recording on/off instead of starting a new session\n"
+    printf "    Toggle recording on/off\n"
     echo
 
     # :flag.usage
@@ -336,6 +343,20 @@ parse_requirements() {
         # :flag.case_no_arg
         args['--region']=1
         shift
+        ;;
+
+      # :flag.case
+      --geometry | -g)
+
+        # :flag.case_arg
+        if [[ -n ${2+x} ]]; then
+          args['--geometry']="$2"
+          shift
+          shift
+        else
+          printf "%s\n" "--geometry requires an argument: --geometry, -g SPEC" >&2
+          exit 1
+        fi
         ;;
 
       # :flag.case

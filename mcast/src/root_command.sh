@@ -12,7 +12,9 @@ recording_filepath_file="/tmp/mcast.filepath"
 
 build_cmd() {
   local geometry=""
-  if [[ ${args[--region]:-} ]]; then
+  if [[ ${args[--geometry]} ]]; then
+    geometry="${args[--geometry]}"
+  elif [[ ${args[--region]} ]]; then
     geometry="$(slurp -d)" || { echo "Error: Failed to select region"; exit 1; }
   fi
 
