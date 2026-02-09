@@ -22,6 +22,10 @@ Utilities that interact with **mango IPC (mmsg)** to provide a better experience
 * **Required**: `grim`, `slurp`, `wl-copy`, `notify-send`
 * **Optional**: `satty` (for annotations)
 
+### `mutil`
+
+* **Required**: `quickshell` (qs)
+
 ## Installation
 
 Run the following command to clone the repository, install binaries to `~/.local/bin`, and set up default configurations in `~/.config/mango-utils`:
@@ -40,11 +44,13 @@ curl -fsSL https://raw.githubusercontent.com/atheeq-rhxn/mango-utils/main/instal
 | Tool | Flag | Argument | Description |
 | --- | --- | --- | --- |
 | **mcast** | `-r`, `--region` | - | Record a selected screen region |
+|  | `-g`, `--geometry` | `SPEC` | Record region with direct geometry in "x,y wxh" format |
 |  | `-b`, `--backend` | `RECORDER` | Backend:<br>wf-recorder<br>wl-screenrec<br>gpu-screen-recorder |
 |  | `-t`, `--toggle` | - | Toggle recording on/off |
 |  | `-o`, `--output` | `DIRECTORY` | Set the output directory |
 |  | `-f`, `--filename` | `NAME` | Set the output filename/pattern |
 | **mshot** | `-r`, `--region` | - | Screenshot a selected region |
+|  | `-g`, `--geometry` | `SPEC` | Capture region with direct geometry in "x,y wxh" format |
 |  | `-w`, `--window` | - | Capture the active window via `mmsg` |
 |  | `-p`, `--pointer` | - | Include mouse pointer in capture |
 |  | `-a`, `--annotate` | - | Open in `satty` for annotation |
