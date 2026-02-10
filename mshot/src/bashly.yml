@@ -29,3 +29,6 @@ flags:
   help: Capture screenshot of the active window
 - long: --no-copy
   help: Skip copying screenshot to clipboard
+- long: --freeze
+  short: -F
+  help: Freeze the screen before taking screenshot

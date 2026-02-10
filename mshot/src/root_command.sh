@@ -3,12 +3,19 @@ filename_pattern="${args[--filename]:-${ini[filename_pattern]:-%Y%m%d%H%M%S.png}
 filename="$(date +"$filename_pattern")"
 filepath="$output_dir/$filename"
 mkdir -p "$output_dir"
-cmd="still"
+
+cmd="grim"
+
 pointer_default="${ini[pointer_default]:-false}"
 pointer_enabled=false
 if [[ $pointer_default == true ]] || [[ ${args[--pointer]} ]]; then
   pointer_enabled=true
 fi
+
+if [[ $pointer_enabled == true ]]; then
+  cmd="$cmd -c"
+fi
+
 copy_enabled=true
 if [[ ${args[--no-copy]} ]]; then
   copy_enabled=false
@@ -17,10 +24,6 @@ window_capture=false
 if [[ ${args[--window]} ]]; then
   window_capture=true
 fi
-if [[ $pointer_enabled == true ]]; then
-  cmd="$cmd -p"
-fi
-cmd="$cmd -c 'grim"
 if [[ $window_capture == true ]]; then
   geometry=$(mmsg -x | awk '/x / {x=$3} /y / {y=$3} /width / {w=$3} /height / {h=$3} END {print x","y" "w"x"h}')
   if [[ -z "$geometry" ]]; then
@@ -33,7 +36,12 @@ elif [[ ${args[--geometry]} ]]; then
 elif [[ ${args[--region]} ]]; then
   cmd="$cmd -g \"\$(slurp -d)\""
 fi
-cmd="$cmd \"$filepath\"'"
+
+cmd="$cmd \"$filepath\""
+
+if [[ ${args[--freeze]} ]]; then
+  cmd="still -c '$cmd'"
+fi
 if [[ ${args[--annotate]} ]]; then
   cmd="$cmd && satty --filename \"$filepath\" --output-filename \"$filepath\" --actions-on-enter save-to-file --early-exit --disable-notifications"
 fi
