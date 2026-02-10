@@ -5,22 +5,23 @@ Utilities that interact with **mango IPC (mmsg)** to provide a better experience
 ## Project Status
 
 > ⚠️ **Early stage**
-> Currently, the only functionality directly interacting with **mango IPC (mmsg)** is **current window screenshots**. Full integration is deferred until mangowc’s new IPC implementation is available.
+> Most of the things are functional but not guaranteed!!
 > All dependencies are chosen to work well with **mangowc (wlroots)**.
+> A potential new mango ipc implementation is awaited before proper status.
 
 ## Dependencies
 
 ### `mcast`
 
 * **Required**:
-  - One of: `wf-recorder(default)`, `wl-screenrec`, `gpu-screen-recorder`
+  - One of: `gpu-screen-recorder(default)`, `wf-recorder`, `wl-screenrec`
   - `slurp`
   - `notify-send`
 
 ### `mshot`
 
 * **Required**: `grim`, `slurp`, `wl-copy`, `notify-send`
-* **Optional**: `satty` (for annotations)
+* **Optional**: `still`(for freezing screen), `satty` (for annotations)
 
 ### `mutil`
 
@@ -57,28 +58,27 @@ curl -fsSL https://raw.githubusercontent.com/atheeq-rhxn/mango-utils/main/instal
 |  | `-o`, `--output` | `DIRECTORY` | Set the output directory |
 |  | `-f`, `--filename` | `NAME` | Set the output filename/pattern |
 |  | `--no-copy` | - | Skip copying to clipboard |
+|  | `-F`, `--freeze` | - | Freeze the screen before capturing (requires `still`) |
 
+### `mutil`
 
-## Mangowc Example Keybindings
+A GUI tool for screenshots and screencasts using QuickShell:
+
+```sh
+qs - c mutil.qml
+```
+
+## Mangowc Example Keybinds
 
 ```ini
-# Screenshot: Fullscreen (copied to clipboard and saved)
-bind=none,Print,spawn_shell,mshot
+# mutil GUI combines mshot & mcast
+bind=none,Print,spawn,qs -c mutil
 
 # Screenshot: Selected region
 bind=SHIFT,Print,spawn_shell,mshot -r
 
-# Screenshot: Active window
-bind=ALT,Print,spawn_shell,mshot -w
-
-# Screenshot: Region with immediate annotation
-bind=SHIFT+ALT,Print,spawn_shell,mshot -ra
-
-# Screencast: Toggle fullscreen recording
-bind=none,F12,spawn_shell,mcast --toggle
-
 # Screencast: Toggle region recording
-bind=SHIFT,F12,spawn_shell,mcast --toggle --region
+bind=ALT,F12,spawn_shell,mcast --toggle --region
 ```
 
 ## Configuration
