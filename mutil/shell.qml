@@ -1,11 +1,10 @@
-import Quickshell
-import Quickshell.Wayland
-import Quickshell.Io
 import QtQuick
 import QtQuick.Layouts
+import QtQuick.Shapes 1.15
+import Quickshell
+import Quickshell.Io
+import Quickshell.Wayland
 
-// Screenshot tool popup for quickshell
-// Integrates with mango-utils/mshot and mcast for capture functionality
 PanelWindow {
   id: root
 
@@ -19,624 +18,730 @@ PanelWindow {
   visible: true
   color: "transparent"
 
-  // Layer shell configuration
   WlrLayershell.layer: WlrLayer.Top
   WlrLayershell.keyboardFocus: WlrKeyboardFocus.OnDemand
   WlrLayershell.namespace: "screencast-tool"
   WlrLayershell.exclusionMode: ExclusionMode.Ignore
 
-  // ===== STATE =====
+  readonly property color ssAccent: "#7aa2f7"
+  readonly property color recAccent: "#f7768e"
+  readonly property color accentColor: isScreenshotMode ? ssAccent : recAccent
+  readonly property color bgColor: "#13141d"
+  readonly property color surfaceColor: "#1a1b26"
+  readonly property color textColor: "#c0caf5"
+  readonly property color textMuted: "#565f89"
+  readonly property color borderColor: "#2a2d3e"
+
+  function accentBg(mode) {
+    return mode ? Qt.rgba(0.478, 0.635, 0.969, 0.13) : Qt.rgba(0.969, 0.463, 0.557, 0.13);
+  }
   property bool isScreenshotMode: true
   property string captureMode: "region"
   property bool includePointer: false
-
-  // Region selection state
   property bool isRegionSelected: false
   property int selectedX: 0
   property int selectedY: 0
   property int selectedWidth: 0
   property int selectedHeight: 0
-
-  // Reset region selection when mode changes
-  onCaptureModeChanged: isRegionSelected = false
-  onIsScreenshotModeChanged: {
-    isRegionSelected = false
-    // Switch away from window mode when entering recording mode
-    if (!isScreenshotMode && captureMode === "window") {
-      captureMode = "region"
-    }
-  }
-
-  // ===== RECORDING STATE =====
   property bool isRecordingActive: false
 
-  // FileView to watch recording status via PID file
+  readonly property string homePath: Quickshell.env("HOME")
+
+  onCaptureModeChanged: isRegionSelected = false
+
+  onIsScreenshotModeChanged: {
+    isRegionSelected = false;
+    if (!isScreenshotMode && captureMode === "window")
+      captureMode = "region";
+  }
+
   FileView {
     id: recordingPidFile
     path: "/tmp/mcast.pid"
     watchChanges: true
     printErrors: false
-    
-    onLoaded: {
-      // PID file exists - recording is active
-      isRecordingActive = true
-    }
-    
+    onLoaded: isRecordingActive = true
     onLoadFailed: {
-      // PID file doesn't exist - recording stopped
       if (isRecordingActive) {
-        isRecordingActive = false
-        // If main panel is hidden, quit the shell entirely after a short delay
-        // to allow mcast to send the notification
-        if (!root.visible) {
-          quitTimer.start()
-        }
+        isRecordingActive = false;
+        if (!root.visible)
+          quitTimer.start();
       }
     }
   }
 
-  // ===== THEME =====
-  readonly property color bgColor: "#1a1b26"
-  readonly property color surfaceColor: "#24283b"
-  readonly property color accentColor: isScreenshotMode ? "#7aa2f7" : "#f7768e"
-  readonly property color textColor: "#a9b1d6"
-  readonly property color textMuted: "#565f89"
-  readonly property color borderColor: "#414868"
-
-  // ===== PATHS =====
-  readonly property string homePath: Quickshell.env("HOME")
-
-  // ===== FUNCTIONS =====
-  function close() {
-    visible = false
-    Qt.quit()
-  }
-
-  function executeAction() {
-    // Common workflow for both screenshot and recording:
-    // Region mode requires two steps: select region → execute
-    // Window and Screen modes execute directly
-
-    if (captureMode === "region" && !isRegionSelected) {
-      // Step 1: Open region selector (for both modes)
-      root.visible = false
-      regionSelector.open()
-      return
-    }
-
-    // Step 2: Execute the actual capture/recording
-    if (isScreenshotMode) {
-      executeScreenshot()
-    } else {
-      executeRecording()
-    }
-  }
-
-  function executeScreenshot() {
-    var args = [homePath + "/.local/bin/mshot"]
-
-    if (captureMode === "region" && isRegionSelected) {
-      // Use -g with pre-selected geometry
-      args.push("-g")
-      args.push(selectedX + "," + selectedY + " " + selectedWidth + "x" + selectedHeight)
-    } else if (captureMode === "window") {
-      args.push("-w")
-    }
-    // screen mode: no additional args needed
-
-    // Add pointer flag if enabled
-    if (includePointer) {
-      args.push("-p")
-    }
-
-    Quickshell.execDetached(args)
-    close()
-  }
-
-  function executeRecording() {
-    // Start recording with the selected mode
-    var args = [homePath + "/.local/bin/mcast", "--toggle"]
-
-    if (captureMode === "region" && isRegionSelected) {
-      // Use -g with pre-selected geometry
-      args.push("-g")
-      args.push(selectedX + "," + selectedY + " " + selectedWidth + "x" + selectedHeight)
-    } else if (captureMode === "window") {
-      args.push("-w")
-    }
-    // screen mode: no additional args needed
-
-    Quickshell.execDetached(args)
-    isRecordingActive = true
-    
-    // Hide the main panel but keep shell running for the indicator
-    root.visible = false
-  }
-
-  function stopRecording() {
-    Quickshell.execDetached([homePath + "/.local/bin/mcast", "--toggle"])
-    isRecordingActive = false
-    
-    // If main panel is hidden, quit the shell entirely after a short delay
-    // to allow mcast to send the notification
-    if (!root.visible) {
-      quitTimer.start()
-    }
-  }
-
-  // Timer to delay quitting so mcast can show the notification
   Timer {
     id: quitTimer
-    interval: 500
-    running: false
+    interval: 600
     repeat: false
     onTriggered: Qt.quit()
   }
 
-  // ===== REGION SELECTOR =====
+  function close() {
+    visible = false;
+    Qt.quit();
+  }
+
+  function executeAction() {
+    if (captureMode === "region" && !isRegionSelected) {
+      root.visible = false;
+      regionSelector.open();
+      return;
+    }
+    isScreenshotMode ? executeScreenshot() : executeRecording();
+  }
+
+  function executeScreenshot() {
+    const args = [homePath + "/.local/bin/mshot"];
+    if (captureMode === "region" && isRegionSelected)
+      args.push("-g", selectedX + "," + selectedY + " " + selectedWidth + "x" + selectedHeight);
+    else if (captureMode === "window")
+      args.push("-w");
+    if (includePointer)
+      args.push("-p");
+    Quickshell.execDetached(args);
+    close();
+  }
+
+  function executeRecording() {
+    const args = [homePath + "/.local/bin/mcast", "--toggle"];
+    if (captureMode === "region" && isRegionSelected)
+      args.push("-g", selectedX + "," + selectedY + " " + selectedWidth + "x" + selectedHeight);
+    else if (captureMode === "window")
+      args.push("-w");
+    Quickshell.execDetached(args);
+    isRecordingActive = true;
+    root.visible = false;
+  }
+
+  function stopRecording() {
+    Quickshell.execDetached([homePath + "/.local/bin/mcast", "--toggle"]);
+    isRecordingActive = false;
+    if (!root.visible)
+      quitTimer.start();
+  }
+
   RegionSelector {
     id: regionSelector
 
     onSelectionComplete: (x, y, w, h) => {
-      selectedX = x
-      selectedY = y
-      selectedWidth = w
-      selectedHeight = h
-      isRegionSelected = true
-      regionSelector.close()
-      root.visible = true
-    }
+                           selectedX = x;
+                           selectedY = y;
+                           selectedWidth = w;
+                           selectedHeight = h;
+                           isRegionSelected = true;
+                           regionSelector.close();
+                           root.visible = true;
+                         }
 
-    // When user cancels (Esc or right-click in RegionSelector)
-    onCancelled: {
-      // Restore shell panel and keep tool open
-      root.visible = true
-    }
+    onCancelled: root.visible = true
   }
 
-  // ===== RECORDING INDICATOR =====
   PanelWindow {
     id: recordingIndicator
 
     screen: Quickshell.screens[0]
-
     anchors.top: true
     anchors.right: true
 
     visible: isRecordingActive
     color: "transparent"
 
-    // Fixed size - positioned with margin
-    implicitWidth: 80
-    implicitHeight: 100
+    implicitWidth: 72
+    implicitHeight: 88
 
-    // Layer shell configuration
     WlrLayershell.layer: WlrLayer.Top
     WlrLayershell.keyboardFocus: WlrKeyboardFocus.OnDemand
     WlrLayershell.namespace: "recording-indicator"
     WlrLayershell.exclusionMode: ExclusionMode.Ignore
 
-    // Indicator width properties
-    property int indicatorMinWidth: 6
-    property int indicatorExpandedWidth: 56
-    property bool isHovered: false
+    property bool hovered: false
 
-    // Container for the indicator bar with margins
     Item {
-      id: indicatorContainer
       anchors.fill: parent
-      anchors.topMargin: 40
-      anchors.rightMargin: 16
+      anchors.topMargin: 32
+      anchors.rightMargin: 12
       focus: true
 
-      Keys.onPressed: (event) => {
-        if (event.key === Qt.Key_Escape) {
-          root.stopRecording()
-          event.accepted = true
-        }
-      }
+      Keys.onEscapePressed: root.stopRecording()
+      onVisibleChanged: if (visible)
+                          forceActiveFocus()
+      Component.onCompleted: if (visible)
+                               forceActiveFocus()
 
-      Component.onCompleted: {
-        if (visible) forceActiveFocus()
-      }
-
-      onVisibleChanged: {
-        if (visible) forceActiveFocus()
-      }
-
-      // Mouse area for hover detection - cover the whole container
-      MouseArea {
-        id: hoverArea
-        anchors.fill: parent
-        hoverEnabled: true
-
-        onEntered: {
-          recordingIndicator.isHovered = true
-        }
-        onExited: {
-          recordingIndicator.isHovered = false
-        }
-        onClicked: root.stopRecording()
-      }
-
-      // Vertical bar on right side
       Rectangle {
-        id: indicatorBar
         anchors.right: parent.right
         anchors.verticalCenter: parent.verticalCenter
-        width: recordingIndicator.isHovered ? recordingIndicator.indicatorExpandedWidth : recordingIndicator.indicatorMinWidth
-        height: recordingIndicator.isHovered ? 56 : 40
-        radius: recordingIndicator.isHovered ? 8 : 3
-        color: "#f7768e"  // Red/pink accent color
+        width: recordingIndicator.hovered ? 52 : 6
+        height: recordingIndicator.hovered ? 52 : 38
+        radius: recordingIndicator.hovered ? 9 : 3
+        color: root.recAccent
 
         Behavior on width {
-          NumberAnimation { duration: 200; easing.type: Easing.OutCubic }
+          NumberAnimation {
+            duration: 200
+            easing.type: Easing.OutCubic
+          }
         }
-
         Behavior on height {
-          NumberAnimation { duration: 200; easing.type: Easing.OutCubic }
+          NumberAnimation {
+            duration: 200
+            easing.type: Easing.OutCubic
+          }
         }
-
         Behavior on radius {
-          NumberAnimation { duration: 200; easing.type: Easing.OutCubic }
+          NumberAnimation {
+            duration: 200
+            easing.type: Easing.OutCubic
+          }
         }
 
-        // Stop button that appears on hover
         Rectangle {
-          id: stopButton
           anchors.centerIn: parent
-          width: 32
-          height: 32
-          radius: 6
-          color: "#24283b"
-          border.width: 2
-          border.color: "#f7768e"
-          opacity: recordingIndicator.isHovered ? 1.0 : 0.0
-          visible: opacity > 0.01
-
+          width: 14
+          height: 14
+          radius: 2
+          color: root.bgColor
+          opacity: recordingIndicator.hovered ? 1.0 : 0.0
           Behavior on opacity {
-            NumberAnimation { duration: 150 }
-          }
-
-          // Stop icon - centered square
-          Rectangle {
-            anchors.centerIn: parent
-            width: 14
-            height: 14
-            color: "#f7768e"
-            radius: 2
-          }
-
-          MouseArea {
-            anchors.fill: parent
-            cursorShape: Qt.PointingHandCursor
-            onClicked: root.stopRecording()
+            NumberAnimation {
+              duration: 150
+            }
           }
         }
 
-        // Subtle pulsing effect when not hovered
         SequentialAnimation on opacity {
-          running: !recordingIndicator.isHovered && recordingIndicator.visible
+          running: !recordingIndicator.hovered && recordingIndicator.visible
           loops: Animation.Infinite
-          NumberAnimation { to: 0.7; duration: 1000; easing.type: Easing.InOutQuad }
-          NumberAnimation { to: 1.0; duration: 1000; easing.type: Easing.InOutQuad }
+          NumberAnimation {
+            to: 0.5
+            duration: 900
+            easing.type: Easing.InOutSine
+          }
+          NumberAnimation {
+            to: 1.0
+            duration: 900
+            easing.type: Easing.InOutSine
+          }
+        }
+
+        MouseArea {
+          anchors.fill: parent
+          hoverEnabled: true
+          cursorShape: Qt.PointingHandCursor
+          onEntered: recordingIndicator.hovered = true
+          onExited: recordingIndicator.hovered = false
+          onClicked: root.stopRecording()
         }
       }
     }
   }
 
-  // ===== UI =====
-
-  // Full-screen container with keyboard focus
   Item {
     anchors.fill: parent
     focus: true
+    Keys.onEscapePressed: root.close()
+    Component.onCompleted: forceActiveFocus()
 
-    Keys.onPressed: (event) => {
-      if (event.key === Qt.Key_Escape) {
-        root.close()
-        event.accepted = true
-      }
-    }
-
-    Component.onCompleted: {
-      forceActiveFocus()
-    }
-
-    // Full-screen click catcher - closes when clicking outside popup
     MouseArea {
       anchors.fill: parent
       acceptedButtons: Qt.LeftButton | Qt.RightButton | Qt.MiddleButton
       onClicked: root.close()
 
-      // Main popup container - sizes based on mutil design
       Rectangle {
-        id: popupContainer
         anchors.horizontalCenter: parent.horizontalCenter
         anchors.bottom: parent.bottom
-        anchors.bottomMargin: 80
-        width: 280
-        height: contentLayout.implicitHeight + 24
-        color: bgColor
+        anchors.bottomMargin: 68
+        width: 276
+        height: layout.implicitHeight + 26
+        color: root.bgColor
         radius: 12
         border.width: 1
-        border.color: borderColor
+        border.color: root.borderColor
 
-        // Block clicks from passing through to background
         MouseArea {
           anchors.fill: parent
         }
 
-        // Content
         ColumnLayout {
-          id: contentLayout
-          anchors.centerIn: parent
-          spacing: 12
+          id: layout
+          anchors {
+            top: parent.top
+            left: parent.left
+            right: parent.right
+            margins: 12
+          }
+          spacing: 10
 
-          // Mode Toggle (Photo/Video) - matching mutil sizing
           Rectangle {
-            Layout.alignment: Qt.AlignHCenter
-            Layout.preferredWidth: 244
-            Layout.preferredHeight: 36
-            color: surfaceColor
+            Layout.fillWidth: true
+            height: 34
+            color: root.surfaceColor
             radius: 8
 
             RowLayout {
-              anchors.fill: parent
-              anchors.margins: 4
-              spacing: 6
+              anchors {
+                fill: parent
+                margins: 3
+              }
+              spacing: 3
 
-              // Photo button
               Rectangle {
                 Layout.fillWidth: true
                 Layout.fillHeight: true
-                color: isScreenshotMode ? accentColor : "transparent"
                 radius: 6
+                color: root.isScreenshotMode ? root.ssAccent : "transparent"
 
                 Text {
                   anchors.centerIn: parent
                   text: "Screenshot"
-                  color: isScreenshotMode ? bgColor : textColor
                   font.pixelSize: 12
-                  font.bold: isScreenshotMode
+                  font.weight: root.isScreenshotMode ? Font.DemiBold : Font.Normal
+                  color: root.isScreenshotMode ? root.bgColor : root.textMuted
                 }
-
                 MouseArea {
                   anchors.fill: parent
-                  onClicked: isScreenshotMode = true
+                  cursorShape: Qt.PointingHandCursor
+                  onClicked: root.isScreenshotMode = true
                 }
               }
 
-              // Video button
               Rectangle {
                 Layout.fillWidth: true
                 Layout.fillHeight: true
-                color: !isScreenshotMode ? accentColor : "transparent"
                 radius: 6
+                color: !root.isScreenshotMode ? root.recAccent : "transparent"
 
                 Text {
                   anchors.centerIn: parent
                   text: "Record"
-                  color: !isScreenshotMode ? bgColor : textColor
                   font.pixelSize: 12
-                  font.bold: !isScreenshotMode
+                  font.weight: !root.isScreenshotMode ? Font.DemiBold : Font.Normal
+                  color: !root.isScreenshotMode ? root.bgColor : root.textMuted
                 }
-
                 MouseArea {
                   anchors.fill: parent
-                  onClicked: isScreenshotMode = false
+                  cursorShape: Qt.PointingHandCursor
+                  onClicked: root.isScreenshotMode = false
                 }
               }
             }
           }
 
-          // Capture Mode Icons - matching mutil grid layout
           RowLayout {
-            Layout.alignment: Qt.AlignHCenter
+            Layout.fillWidth: true
             spacing: 6
 
-            // Region
             Rectangle {
-              Layout.preferredWidth: 78
-              Layout.preferredHeight: 64
-              color: captureMode === "region"
-                       ? Qt.rgba(accentColor.r, accentColor.g, accentColor.b, 0.15)
-                       : surfaceColor
+              Layout.fillWidth: true
+              height: 64
               radius: 8
-              border.width: captureMode === "region" ? 2 : 0
-              border.color: accentColor
+              color: root.captureMode === "region" ? root.accentBg(root.isScreenshotMode) : root.surfaceColor
+              border.width: root.captureMode === "region" ? 1 : 0
+              border.color: root.accentColor
 
               ColumnLayout {
                 anchors.centerIn: parent
-                spacing: 4
-
-                Text {
+                spacing: 5
+                Item {
                   Layout.alignment: Qt.AlignHCenter
-                  text: "◰"
-                  color: captureMode === "region" ? accentColor : textColor
-                  font.pixelSize: 20
+                  width: 18
+                  height: 16
+                  readonly property color ic: root.captureMode === "region" ? root.accentColor : root.textColor
+                  Rectangle {
+                    x: 0
+                    y: 0
+                    width: 5
+                    height: 2
+                    color: parent.ic
+                  }
+                  Rectangle {
+                    x: 0
+                    y: 0
+                    width: 2
+                    height: 5
+                    color: parent.ic
+                  }
+                  Rectangle {
+                    x: 13
+                    y: 0
+                    width: 5
+                    height: 2
+                    color: parent.ic
+                  }
+                  Rectangle {
+                    x: 16
+                    y: 0
+                    width: 2
+                    height: 5
+                    color: parent.ic
+                  }
+                  Rectangle {
+                    x: 0
+                    y: 14
+                    width: 5
+                    height: 2
+                    color: parent.ic
+                  }
+                  Rectangle {
+                    x: 0
+                    y: 11
+                    width: 2
+                    height: 5
+                    color: parent.ic
+                  }
+                  Rectangle {
+                    x: 13
+                    y: 14
+                    width: 5
+                    height: 2
+                    color: parent.ic
+                  }
+                  Rectangle {
+                    x: 16
+                    y: 11
+                    width: 2
+                    height: 5
+                    color: parent.ic
+                  }
                 }
-
                 Text {
                   Layout.alignment: Qt.AlignHCenter
                   text: "Region"
-                  color: captureMode === "region" ? accentColor : textMuted
                   font.pixelSize: 11
-                  font.bold: captureMode === "region"
+                  font.weight: root.captureMode === "region" ? Font.DemiBold : Font.Normal
+                  color: root.captureMode === "region" ? root.accentColor : root.textMuted
                 }
               }
-
               MouseArea {
                 anchors.fill: parent
-                onClicked: captureMode = "region"
+                cursorShape: Qt.PointingHandCursor
+                onClicked: root.captureMode = "region"
               }
             }
 
-            // Window
             Rectangle {
-              Layout.preferredWidth: 78
-              Layout.preferredHeight: 64
-              color: !isScreenshotMode
-                       ? Qt.rgba(textMuted.r, textMuted.g, textMuted.b, 0.3)
-                       : (captureMode === "window"
-                           ? Qt.rgba(accentColor.r, accentColor.g, accentColor.b, 0.15)
-                           : surfaceColor)
+              Layout.fillWidth: true
+              height: 64
               radius: 8
-              border.width: captureMode === "window" && isScreenshotMode ? 2 : 0
-              border.color: accentColor
-              opacity: !isScreenshotMode ? 0.5 : 1.0
+              enabled: root.isScreenshotMode
+              opacity: root.isScreenshotMode ? 1.0 : 0.3
+              color: (root.captureMode === "window") ? root.accentBg(root.isScreenshotMode) : root.surfaceColor
+              border.width: (root.captureMode === "window") ? 1 : 0
+              border.color: root.accentColor
 
               ColumnLayout {
                 anchors.centerIn: parent
-                spacing: 4
-
-                Text {
+                spacing: 5
+                Item {
                   Layout.alignment: Qt.AlignHCenter
-                  text: "□"
-                  color: !isScreenshotMode
-                           ? textMuted
-                           : (captureMode === "window" ? accentColor : textColor)
-                  font.pixelSize: 20
+                  width: 18
+                  height: 15
+                  readonly property color ic: (root.captureMode === "window" && root.isScreenshotMode) ? root.accentColor : root.textColor
+                  readonly property color bar: (root.captureMode === "window" && root.isScreenshotMode) ? root.accentColor : root.textMuted
+                  Rectangle {
+                    anchors.fill: parent
+                    radius: 2
+                    color: "transparent"
+                    border.width: 1.5
+                    border.color: parent.ic
+                  }
+                  Rectangle {
+                    x: 1.5
+                    y: 1.5
+                    width: 15
+                    height: 4
+                    color: parent.bar
+                    radius: 1
+                  }
                 }
-
                 Text {
                   Layout.alignment: Qt.AlignHCenter
                   text: "Window"
-                  color: !isScreenshotMode
-                           ? textMuted
-                           : (captureMode === "window" ? accentColor : textMuted)
                   font.pixelSize: 11
-                  font.bold: captureMode === "window" && isScreenshotMode
+                  font.weight: (root.captureMode === "window" && root.isScreenshotMode) ? Font.DemiBold : Font.Normal
+                  color: (root.captureMode === "window" && root.isScreenshotMode) ? root.accentColor : root.textMuted
                 }
               }
-
               MouseArea {
                 anchors.fill: parent
-                enabled: isScreenshotMode
-                onClicked: captureMode = "window"
+                enabled: root.isScreenshotMode
+                cursorShape: root.isScreenshotMode ? Qt.PointingHandCursor : Qt.ArrowCursor
+                onClicked: root.captureMode = "window"
               }
             }
 
-            // Screen
             Rectangle {
-              Layout.preferredWidth: 78
-              Layout.preferredHeight: 64
-              color: captureMode === "screen"
-                       ? Qt.rgba(accentColor.r, accentColor.g, accentColor.b, 0.15)
-                       : surfaceColor
+              Layout.fillWidth: true
+              height: 64
               radius: 8
-              border.width: captureMode === "screen" ? 2 : 0
-              border.color: accentColor
+              color: root.captureMode === "screen" ? root.accentBg(root.isScreenshotMode) : root.surfaceColor
+              border.width: root.captureMode === "screen" ? 1 : 0
+              border.color: root.accentColor
 
               ColumnLayout {
                 anchors.centerIn: parent
-                spacing: 4
-
-                Text {
+                spacing: 5
+                Item {
                   Layout.alignment: Qt.AlignHCenter
-                  text: "⛶"
-                  color: captureMode === "screen" ? accentColor : textColor
-                  font.pixelSize: 20
+                  width: 20
+                  height: 17
+                  readonly property color ic: root.captureMode === "screen" ? root.accentColor : root.textColor
+                  readonly property color st: root.captureMode === "screen" ? root.accentColor : root.textMuted
+                  Rectangle {
+                    x: 0
+                    y: 0
+                    width: 20
+                    height: 13
+                    radius: 2
+                    color: "transparent"
+                    border.width: 1.5
+                    border.color: parent.ic
+                  }
+                  Rectangle {
+                    x: 8.5
+                    y: 13
+                    width: 3
+                    height: 2
+                    color: parent.st
+                  }
+                  Rectangle {
+                    x: 5
+                    y: 15
+                    width: 10
+                    height: 2
+                    radius: 1
+                    color: parent.st
+                  }
                 }
-
                 Text {
                   Layout.alignment: Qt.AlignHCenter
                   text: "Screen"
-                  color: captureMode === "screen" ? accentColor : textMuted
                   font.pixelSize: 11
-                  font.bold: captureMode === "screen"
+                  font.weight: root.captureMode === "screen" ? Font.DemiBold : Font.Normal
+                  color: root.captureMode === "screen" ? root.accentColor : root.textMuted
                 }
               }
-
               MouseArea {
                 anchors.fill: parent
-                onClicked: captureMode = "screen"
+                cursorShape: Qt.PointingHandCursor
+                onClicked: root.captureMode = "screen"
               }
             }
           }
 
-          // Selected region info (only for region mode when selected)
           Text {
             Layout.alignment: Qt.AlignHCenter
-            visible: captureMode === "region" && isRegionSelected
-            text: selectedWidth + "x" + selectedHeight
-            color: accentColor
+            visible: root.captureMode === "region" && root.isRegionSelected
+            text: root.selectedWidth + " × " + root.selectedHeight
             font.pixelSize: 11
-            font.bold: true
+            font.weight: Font.DemiBold
+            color: root.accentColor
           }
 
-          // Action Button Row - Capture/Record + Pointer Toggle
           RowLayout {
-            Layout.alignment: Qt.AlignHCenter
+            Layout.fillWidth: true
             spacing: 6
 
-            // Action Button - Capture/Record
             Rectangle {
-              id: actionButton
-              Layout.preferredWidth: 194
-              Layout.preferredHeight: 36
-              color: accentColor
+              Layout.fillWidth: true
+              height: 36
               radius: 8
+              color: root.accentColor
 
               RowLayout {
                 anchors.centerIn: parent
-                spacing: 8
+                spacing: 7
 
-                Text {
-                  text: isScreenshotMode ? "◉" : "⏺"
-                  color: bgColor
-                  font.pixelSize: 16
-                }
-
-                Text {
-                  text: {
-                    // Show appropriate button text based on state
-                    if (captureMode === "region" && !isRegionSelected) {
-                      return "Select Region"
-                    }
-                    if (isScreenshotMode) {
-                      return "Capture"
-                    }
-                    return "Start Recording"
+                Item {
+                  width: 14
+                  height: 14
+                  visible: root.captureMode === "region" && !root.isRegionSelected
+                  Rectangle {
+                    x: 0
+                    y: 0
+                    width: 4
+                    height: 2
+                    color: root.bgColor
                   }
-                  color: bgColor
-                  font.pixelSize: 12
-                  font.bold: true
+                  Rectangle {
+                    x: 0
+                    y: 0
+                    width: 2
+                    height: 4
+                    color: root.bgColor
+                  }
+                  Rectangle {
+                    x: 10
+                    y: 0
+                    width: 4
+                    height: 2
+                    color: root.bgColor
+                  }
+                  Rectangle {
+                    x: 12
+                    y: 0
+                    width: 2
+                    height: 4
+                    color: root.bgColor
+                  }
+                  Rectangle {
+                    x: 0
+                    y: 12
+                    width: 4
+                    height: 2
+                    color: root.bgColor
+                  }
+                  Rectangle {
+                    x: 0
+                    y: 10
+                    width: 2
+                    height: 4
+                    color: root.bgColor
+                  }
+                  Rectangle {
+                    x: 10
+                    y: 12
+                    width: 4
+                    height: 2
+                    color: root.bgColor
+                  }
+                  Rectangle {
+                    x: 12
+                    y: 10
+                    width: 2
+                    height: 4
+                    color: root.bgColor
+                  }
+                  Rectangle {
+                    anchors.centerIn: parent
+                    width: 3
+                    height: 3
+                    radius: 1.5
+                    color: root.bgColor
+                  }
                 }
-              }
 
-              MouseArea {
-                anchors.fill: parent
-                onClicked: executeAction()
-              }
-            }
+                Item {
+                  width: 16
+                  height: 13
+                  visible: root.isScreenshotMode && !(root.captureMode === "region" && !root.isRegionSelected)
+                  Rectangle {
+                    x: 0
+                    y: 3
+                    width: 16
+                    height: 10
+                    radius: 2
+                    color: "transparent"
+                    border.width: 1.5
+                    border.color: root.bgColor
+                  }
+                  Rectangle {
+                    x: 5
+                    y: 0
+                    width: 6
+                    height: 4
+                    radius: 1
+                    color: root.accentColor
+                    border.width: 1.5
+                    border.color: root.bgColor
+                  }
+                  Rectangle {
+                    x: 5
+                    y: 5
+                    width: 6
+                    height: 6
+                    radius: 3
+                    color: "transparent"
+                    border.width: 1.5
+                    border.color: root.bgColor
+                  }
+                }
 
-            // Pointer Toggle Button (screenshot mode only)
-            Rectangle {
-              id: pointerToggleButton
-              Layout.preferredWidth: isScreenshotMode ? 44 : 0
-              Layout.preferredHeight: 36
-              visible: isScreenshotMode
-              color: includePointer ? Qt.rgba(accentColor.r, accentColor.g, accentColor.b, 0.15) : surfaceColor
-              radius: 8
-              border.width: includePointer ? 2 : 0
-              border.color: accentColor
+                Rectangle {
+                  width: 10
+                  height: 10
+                  radius: 5
+                  color: root.bgColor
+                  visible: !root.isScreenshotMode && !(root.captureMode === "region" && !root.isRegionSelected)
+                }
 
-              Text {
-                anchors.centerIn: parent
-                text: "🖱"
-                color: includePointer ? accentColor : textMuted
-                font.pixelSize: 16
+                Text {
+                  text: (root.captureMode === "region" && !root.isRegionSelected) ? "Select Region" : root.isScreenshotMode ? "Capture" : "Start Recording"
+                  font.pixelSize: 12
+                  font.weight: Font.DemiBold
+                  color: root.bgColor
+                }
               }
 
               MouseArea {
                 anchors.fill: parent
                 cursorShape: Qt.PointingHandCursor
-                onClicked: includePointer = !includePointer
+                onClicked: root.executeAction()
+              }
+            }
+
+            Rectangle {
+              width: 36
+              height: 36
+              radius: 8
+              visible: root.isScreenshotMode
+              color: root.includePointer ? root.accentBg(true) : root.surfaceColor
+              border.width: root.includePointer ? 1 : 0
+              border.color: root.ssAccent
+
+              Shape {
+                id: miniCursor
+                anchors.centerIn: parent
+                width: 10
+                height: 14
+
+                readonly property color ic: root.includePointer ? root.ssAccent : root.textMuted
+
+                ShapePath {
+                  fillColor: miniCursor.ic
+                  strokeColor: miniCursor.ic
+                  strokeWidth: 0.5
+                  capStyle: ShapePath.RoundCap
+                  joinStyle: ShapePath.MiterJoin
+
+                  startX: 0
+                  startY: 0
+                  PathLine {
+                    x: 0
+                    y: 12
+                  }
+                  PathLine {
+                    x: 3
+                    y: 9.5
+                  }
+                  PathLine {
+                    x: 5.5
+                    y: 14
+                  }
+                  PathLine {
+                    x: 7
+                    y: 13
+                  }
+                  PathLine {
+                    x: 4.5
+                    y: 9
+                  }
+                  PathLine {
+                    x: 8.5
+                    y: 8.5
+                  }
+                  PathLine {
+                    x: 0
+                    y: 0
+                  }
+                }
               }
 
-              Behavior on Layout.preferredWidth {
-                NumberAnimation { duration: 150; easing.type: Easing.OutCubic }
+              MouseArea {
+                anchors.fill: parent
+                cursorShape: Qt.PointingHandCursor
+                onClicked: root.includePointer = !root.includePointer
               }
             }
           }
