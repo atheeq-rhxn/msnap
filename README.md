@@ -14,18 +14,18 @@ Utilities that interact with **mango IPC (mmsg)** to provide a better experience
 ### `mcast`
 
 * **Required**:
-  - One of: `gpu-screen-recorder(default)`, `wf-recorder`, `wl-screenrec`
-  - `slurp`
-  - `notify-send`
+  - One of: [`gpu-screen-recorder(default)`](https://git.dec05eba.com/gpu-screen-recorder/) [`wf-recorder`](https://github.com/ammen99/wf-recorder) [`wl-screenrec`](https://github.com/russelltg/wl-screenrec)
+  - [`slurp`](https://github.com/emersion/slurp)
+  - [`notify-send`](https://gitlab.gnome.org/GNOME/libnotify)
 
 ### `mshot`
 
-* **Required**: `grim`, `slurp`, `wl-copy`, `notify-send`
-* **Optional**: `still`(for freezing screen), `satty` (for annotations)
+* **Required**: [`grim`](https://gitlab.freedesktop.org/emersion/grim), [`slurp`](https://github.com/emersion/slurp), [`wl-copy`](https://github.com/bugaevc/wl-clipboard), [`notify-send`](https://gitlab.gnome.org/GNOME/libnotify)
+* **Optional**: [`still`](https://github.com/faergeek/still) (for freezing screen), [`satty`](https://github.com/gabm/Satty) (for annotations)
 
 ### `mutil`
 
-* **Required**: `quickshell` (qs)
+* **Required**: [`quickshell` (qs)](https://github.com/quickshell-mirror/quickshell)
 
 ## Installation
 
