@@ -70,8 +70,9 @@ Launch the GUI:
 qs -p ~/.config/msnap/gui
 ```
 
-## Mangowc Example Keybinds
+## Mangowc Configuration
 
+Example keybinds:
 ```ini
 # gui combines mshot & mcast
 bind=none,Print,spawn,qs -p ~/.config/msnap/gui
@@ -81,6 +82,11 @@ bind=SHIFT,Print,spawn_shell,mshot -r
 
 # Screencast: Toggle region recording
 bind=ALT,F12,spawn_shell,mcast --toggle --region
+```
+
+**Note:** Add to this to prevent msnap appearing in screenshots due to animation delays:
+```ini
+layerrule=layer_name:msnap,noanim:1
 ```
 
 ## Configuration
