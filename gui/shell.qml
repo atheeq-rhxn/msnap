@@ -35,9 +35,17 @@ PanelWindow {
   function accentBg(mode) {
     return mode ? Qt.rgba(0.478, 0.635, 0.969, 0.13) : Qt.rgba(0.969, 0.463, 0.557, 0.13);
   }
+
   property bool isScreenshotMode: true
   property string captureMode: "region"
+
+  // Screenshot specific
   property bool includePointer: false
+
+  // Recording specific
+  property bool recordMic: false
+  property bool recordAudio: false
+
   property bool isRegionSelected: false
   property int selectedX: 0
   property int selectedY: 0
@@ -109,6 +117,13 @@ PanelWindow {
       args.push("-g", selectedX + "," + selectedY + " " + selectedWidth + "x" + selectedHeight);
     else if (captureMode === "window")
       args.push("-w");
+
+    // Audio Flags
+    if (recordMic)
+      args.push("-m");
+    if (recordAudio)
+      args.push("-a");
+
     Quickshell.execDetached(args);
     isRecordingActive = true;
     root.visible = false;
@@ -164,9 +179,11 @@ PanelWindow {
       focus: true
 
       Keys.onEscapePressed: root.stopRecording()
-      
-      onVisibleChanged: if (visible) forceActiveFocus()
-      Component.onCompleted: if (visible) forceActiveFocus()
+
+      onVisibleChanged: if (visible)
+                          forceActiveFocus()
+      Component.onCompleted: if (visible)
+                               forceActiveFocus()
 
       Rectangle {
         anchors.right: parent.right
@@ -239,71 +256,68 @@ PanelWindow {
   Item {
     anchors.fill: parent
     focus: true
-    
+
     function navigateLeft() {
       const modes = ["region", "window", "screen"];
-      const availableModes = modes.filter(mode => 
-        mode !== "window" || root.isScreenshotMode
-      );
-      
+      const availableModes = modes.filter(mode => mode !== "window" || root.isScreenshotMode);
       let currentIndex = availableModes.indexOf(root.captureMode);
-      if (currentIndex === -1) currentIndex = 0;
-      
+      if (currentIndex === -1)
+        currentIndex = 0;
+
       currentIndex = (currentIndex - 1 + availableModes.length) % availableModes.length;
       root.captureMode = availableModes[currentIndex];
     }
-    
+
     function navigateRight() {
       const modes = ["region", "window", "screen"];
-      const availableModes = modes.filter(mode => 
-        mode !== "window" || root.isScreenshotMode
-      );
-      
+      const availableModes = modes.filter(mode => mode !== "window" || root.isScreenshotMode);
       let currentIndex = availableModes.indexOf(root.captureMode);
-      if (currentIndex === -1) currentIndex = 0;
-      
+      if (currentIndex === -1)
+        currentIndex = 0;
+
       currentIndex = (currentIndex + 1) % availableModes.length;
       root.captureMode = availableModes[currentIndex];
     }
-    
+
     Keys.onLeftPressed: navigateLeft()
     Keys.onRightPressed: navigateRight()
-    
-    Keys.onPressed: (event) => {
-      if (event.key === Qt.Key_H) {
-        navigateLeft();
-        event.accepted = true;
-      } else if (event.key === Qt.Key_L) {
-        navigateRight();
-        event.accepted = true;
-      } else if (event.key === Qt.Key_J) {
-        root.isScreenshotMode = false;
-        event.accepted = true;
-      } else if (event.key === Qt.Key_K) {
-        root.isScreenshotMode = true;
-        event.accepted = true;
-      } else if (event.key === Qt.Key_P) {
-        if (root.isScreenshotMode) {
-          root.includePointer = !root.includePointer;
-        }
-        event.accepted = true;
-      }
-    }
+
+    Keys.onPressed: event => {
+                      if (event.key === Qt.Key_H) {
+                        navigateLeft();
+                        event.accepted = true;
+                      } else if (event.key === Qt.Key_L) {
+                        navigateRight();
+                        event.accepted = true;
+                      } else if (event.key === Qt.Key_J) {
+                        root.isScreenshotMode = false;
+                        event.accepted = true;
+                      } else if (event.key === Qt.Key_K) {
+                        root.isScreenshotMode = true;
+                        event.accepted = true;
+                      } else if (event.key === Qt.Key_P) {
+                        if (root.isScreenshotMode) {
+                          root.includePointer = !root.includePointer;
+                        }
+                        event.accepted = true;
+                      }
+                    }
 
     Keys.onTabPressed: {
       root.isScreenshotMode = !root.isScreenshotMode;
     }
-      
+
     Keys.onBacktabPressed: {
       root.isScreenshotMode = !root.isScreenshotMode;
     }
-    
+
     Keys.onReturnPressed: root.executeAction()
     Keys.onEnterPressed: root.executeAction()
     Keys.onSpacePressed: root.executeAction()
     Keys.onEscapePressed: root.close()
-    
-    onVisibleChanged: if (visible) forceActiveFocus()
+
+    onVisibleChanged: if (visible)
+                        forceActiveFocus()
     Component.onCompleted: forceActiveFocus()
 
     MouseArea {
@@ -606,6 +620,7 @@ PanelWindow {
             Layout.fillWidth: true
             spacing: 6
 
+            // Main Action Button (Record / Capture)
             Rectangle {
               Layout.fillWidth: true
               height: 36
@@ -620,6 +635,7 @@ PanelWindow {
                   width: 14
                   height: 14
                   visible: root.captureMode === "region" && !root.isRegionSelected
+
                   Rectangle {
                     x: 0
                     y: 0
@@ -744,6 +760,7 @@ PanelWindow {
               }
             }
 
+            // Pointer Toggle (Screenshot Mode Only)
             Rectangle {
               width: 36
               height: 36
@@ -805,6 +822,147 @@ PanelWindow {
                 anchors.fill: parent
                 cursorShape: Qt.PointingHandCursor
                 onClicked: root.includePointer = !root.includePointer
+              }
+            }
+
+            // Mic Toggle (Recording Mode Only)
+            Rectangle {
+              width: 36
+              height: 36
+              radius: 8
+              visible: !root.isScreenshotMode
+              color: root.recordMic ? root.accentBg(false) : root.surfaceColor
+              border.width: root.recordMic ? 1 : 0
+              border.color: root.recAccent
+
+              Item {
+                anchors.centerIn: parent
+                width: 12
+                height: 16
+                readonly property color ic: root.recordMic ? root.recAccent : root.textMuted
+
+                Rectangle {
+                  // Mic Body
+                  anchors.horizontalCenter: parent.horizontalCenter
+                  y: 0
+                  width: 6
+                  height: 10
+                  radius: 3
+                  color: parent.ic
+                }
+                Shape {
+                  anchors.fill: parent
+                  ShapePath {
+                    strokeWidth: 1.5
+                    strokeColor: parent.ic
+                    fillColor: "transparent"
+                    capStyle: ShapePath.RoundCap
+                    joinStyle: ShapePath.RoundJoin
+
+                    startX: 0
+                    startY: 5
+                    PathArc {
+                      x: 12
+                      y: 5
+                      radiusX: 6
+                      radiusY: 6
+                      useLargeArc: false
+                    }
+
+                    PathMove {
+                      x: 6
+                      y: 11
+                    } // Center bottom of arc
+                    PathLine {
+                      x: 6
+                      y: 14.5
+                    }
+
+                    PathMove {
+                      x: 3
+                      y: 14.5
+                    }
+                    PathLine {
+                      x: 9
+                      y: 14.5
+                    }
+                  }
+                }
+              }
+
+              MouseArea {
+                anchors.fill: parent
+                cursorShape: Qt.PointingHandCursor
+                onClicked: root.recordMic = !root.recordMic
+              }
+            }
+
+            // Audio/System Sound Toggle (Recording Mode Only)
+            Rectangle {
+              width: 36
+              height: 36
+              radius: 8
+              visible: !root.isScreenshotMode
+              color: root.recordAudio ? root.accentBg(false) : root.surfaceColor
+              border.width: root.recordAudio ? 1 : 0
+              border.color: root.recAccent
+
+              Item {
+                anchors.centerIn: parent
+                width: 14
+                height: 14
+                readonly property color ic: root.recordAudio ? root.recAccent : root.textMuted
+
+                Shape {
+                  anchors.fill: parent
+                  ShapePath {
+                    strokeWidth: 1.5
+                    strokeColor: parent.ic
+                    fillColor: "transparent"
+                    capStyle: ShapePath.RoundCap
+
+                    startX: 1.5
+                    startY: 7
+                    PathLine {
+                      x: 1.5
+                      y: 4
+                    }
+                    PathArc {
+                      x: 12.5
+                      y: 4
+                      radiusX: 5.5
+                      radiusY: 5.5
+                      useLargeArc: false
+                    }
+                    PathLine {
+                      x: 12.5
+                      y: 7
+                    }
+                  }
+                }
+
+                Rectangle {
+                  x: 0
+                  y: 6
+                  width: 3
+                  height: 7
+                  radius: 1.5
+                  color: parent.ic
+                }
+                Rectangle {
+                  x: 11
+                  y: 6
+                  width: 3
+                  height: 7
+                  radius: 1.5
+                  color: parent.ic
+                }
+              }
+
+              MouseArea {
+                anchors.fill: parent
+                cursorShape: Qt.PointingHandCursor
+                onClicked: root.recordAudio = !root.recordAudio
               }
             }
           }
