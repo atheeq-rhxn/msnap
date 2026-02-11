@@ -276,6 +276,17 @@ PanelWindow {
       } else if (event.key === Qt.Key_L) {
         navigateRight();
         event.accepted = true;
+      } else if (event.key === Qt.Key_J) {
+        root.isScreenshotMode = false;
+        event.accepted = true;
+      } else if (event.key === Qt.Key_K) {
+        root.isScreenshotMode = true;
+        event.accepted = true;
+      } else if (event.key === Qt.Key_P) {
+        if (root.isScreenshotMode) {
+          root.includePointer = !root.includePointer;
+        }
+        event.accepted = true;
       }
     }
 
@@ -289,6 +300,7 @@ PanelWindow {
     
     Keys.onReturnPressed: root.executeAction()
     Keys.onEnterPressed: root.executeAction()
+    Keys.onSpacePressed: root.executeAction()
     Keys.onEscapePressed: root.close()
     
     onVisibleChanged: if (visible) forceActiveFocus()
