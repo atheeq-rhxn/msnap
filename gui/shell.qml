@@ -163,6 +163,53 @@ PanelWindow {
       anchors.rightMargin: 12
       focus: true
 
+      Keys.onLeftPressed: {
+        const modes = ["region", "window", "screen"];
+        // Filter window mode based on availability
+        const availableModes = modes.filter(mode => 
+          mode !== "window" || root.isScreenshotMode
+        );
+        
+        let currentIndex = availableModes.indexOf(root.captureMode);
+        if (currentIndex === -1) currentIndex = 0;
+        
+        currentIndex = (currentIndex - 1 + availableModes.length) % availableModes.length;
+        root.captureMode = availableModes[currentIndex];
+      }
+      
+      Keys.onRightPressed: {
+        const modes = ["region", "window", "screen"];
+        // Filter window mode based on availability
+        const availableModes = modes.filter(mode => 
+          mode !== "window" || root.isScreenshotMode
+        );
+        
+        let currentIndex = availableModes.indexOf(root.captureMode);
+        if (currentIndex === -1) currentIndex = 0;
+        
+        currentIndex = (currentIndex + 1) % availableModes.length;
+        root.captureMode = availableModes[currentIndex];
+      }
+
+      Keys.onTabPressed: {
+        if (!root.isScreenshotMode) {
+          root.isScreenshotMode = true;
+        } else {
+          root.isScreenshotMode = false;
+        }
+      }
+        
+      Keys.onBacktabPressed: {
+        if (root.isScreenshotMode) {
+          root.isScreenshotMode = false;
+        } else {
+          root.isScreenshotMode = true;
+        }
+      }
+      
+      Keys.onReturnPressed: root.executeAction()
+      Keys.onEnterPressed: root.executeAction()
+
       Keys.onEscapePressed: root.stopRecording()
       onVisibleChanged: if (visible)
                           forceActiveFocus()
