@@ -17,7 +17,7 @@ PanelWindow {
 
   WlrLayershell.layer: WlrLayer.Top
   WlrLayershell.keyboardFocus: WlrKeyboardFocus.OnDemand
-  WlrLayershell.namespace: "region-selector"
+  WlrLayershell.namespace: "msnap"
   WlrLayershell.exclusionMode: ExclusionMode.Ignore
 
   signal selectionComplete(int x, int y, int width, int height)

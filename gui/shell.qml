@@ -20,7 +20,7 @@ PanelWindow {
 
   WlrLayershell.layer: WlrLayer.Top
   WlrLayershell.keyboardFocus: WlrKeyboardFocus.OnDemand
-  WlrLayershell.namespace: "screencast-tool"
+  WlrLayershell.namespace: "msnap"
   WlrLayershell.exclusionMode: ExclusionMode.Ignore
 
   readonly property color ssAccent: "#7aa2f7"
@@ -152,7 +152,7 @@ PanelWindow {
 
     WlrLayershell.layer: WlrLayer.Top
     WlrLayershell.keyboardFocus: WlrKeyboardFocus.OnDemand
-    WlrLayershell.namespace: "recording-indicator"
+    WlrLayershell.namespace: "msnap"
     WlrLayershell.exclusionMode: ExclusionMode.Ignore
 
     property bool hovered: false
