@@ -661,5 +661,10 @@ PanelWindow {
         }
       }
     }
+    onActiveFocusChanged: {
+      if (!activeFocus && visible && !regionSelector.visible && !isRecordingActive) {
+        root.close();
+      }
+    }
   }
 }
