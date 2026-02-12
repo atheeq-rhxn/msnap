@@ -301,6 +301,16 @@ PanelWindow {
                           root.includePointer = !root.includePointer;
                         }
                         event.accepted = true;
+                      } else if (event.key === Qt.Key_M) {
+                        if (!root.isScreenshotMode) {
+                          root.recordMic = !root.recordMic;
+                        }
+                        event.accepted = true;
+                      } else if (event.key === Qt.Key_A) {
+                        if (!root.isScreenshotMode) {
+                          root.recordAudio = !root.recordAudio;
+                        }
+                        event.accepted = true;
                       }
                     }
 
