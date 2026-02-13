@@ -1,6 +1,12 @@
 # msnap
 
-Screenshot and screen recording utilities that interact with **mango IPC (mmsg)** to provide a better experience.
+Screenshot and Screencast utils that aims to provide a better experience with mangowc.
+
+
+https://github.com/user-attachments/assets/53a4c616-3a6f-4400-ae9c-a15e277e710f
+
+
+---
 
 ## Project Status
 
