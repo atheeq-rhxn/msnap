@@ -27,8 +27,12 @@ Singleton {
     id: configFile
     path: root.configPath
     watchChanges: true
-    onLoaded: data => root.loadConfig(data)
-    onLoadFailed: reloadTimer.start()
+    onTextChanged: {
+      root.loadConfig(text())
+    }
+    onLoadFailed: {
+      reloadTimer.start()
+    }
   }
 
   Timer {
@@ -38,11 +42,8 @@ Singleton {
     onTriggered: configFile.reload()
   }
 
-  Component.onCompleted: loadConfig(Quickshell.env("MSNAP_GUI_CONFIG"))
-
   function loadConfig(data) {
     if (!data) {
-      configFile.reload()
       return
     }
 
