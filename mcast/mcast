@@ -14,7 +14,7 @@ root_command() {
   # src/root_command.sh
   set -euo pipefail
 
-  output_dir="${args[--output]:-${ini[output_dir]:-$HOME/Videos/Screencasts}}"
+  output_dir="${args[--output]:-${ini[output_dir]:-${XDG_VIDEOS_DIR:-$HOME/Videos}/Screencasts}}"
   filename_pattern="${args[--filename]:-${ini[filename_pattern]:-%Y%m%d%H%M%S.mp4}}"
   toggle_mode="${args[--toggle]:-}"
 
@@ -466,7 +466,7 @@ initialize() {
   set -e
 
   # src/initialize.sh
-  config_dir="$HOME/.config/msnap"
+  config_dir="${XDG_CONFIG_HOME:-$HOME/.config}/msnap"
   config_file="$config_dir/mcast.conf"
   if [[ ! -f "$config_file" ]]; then
     mkdir -p "$config_dir"

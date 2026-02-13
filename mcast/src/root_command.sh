@@ -1,6 +1,6 @@
 set -euo pipefail
 
-output_dir="${args[--output]:-${ini[output_dir]:-$HOME/Videos/Screencasts}}"
+output_dir="${args[--output]:-${ini[output_dir]:-${XDG_VIDEOS_DIR:-$HOME/Videos}/Screencasts}}"
 filename_pattern="${args[--filename]:-${ini[filename_pattern]:-%Y%m%d%H%M%S.mp4}}"
 toggle_mode="${args[--toggle]:-}"
 

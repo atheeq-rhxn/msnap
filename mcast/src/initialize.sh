@@ -1,4 +1,4 @@
-config_dir="$HOME/.config/msnap"
+config_dir="${XDG_CONFIG_HOME:-$HOME/.config}/msnap"
 config_file="$config_dir/mcast.conf"
 if [[ ! -f "$config_file" ]]; then
   mkdir -p "$config_dir"

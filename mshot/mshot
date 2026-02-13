@@ -12,7 +12,7 @@ fi
 # :command.root_command
 root_command() {
   # src/root_command.sh
-  output_dir="${args[--output]:-${ini[output_dir]:-$HOME/Pictures/Screenshots}}"
+  output_dir="${args[--output]:-${ini[output_dir]:-${XDG_PICTURES_DIR:-$HOME/Pictures}/Screenshots}}"
   filename_pattern="${args[--filename]:-${ini[filename_pattern]:-%Y%m%d%H%M%S.png}}"
   filename="$(date +"$filename_pattern")"
   filepath="$output_dir/$filename"
@@ -439,7 +439,7 @@ initialize() {
   set -e
 
   # src/initialize.sh
-  config_dir="$HOME/.config/msnap"
+  config_dir="${XDG_CONFIG_HOME:-$HOME/.config}/msnap"
   config_file="$config_dir/mshot.conf"
   if [[ ! -f "$config_file" ]]; then
     mkdir -p "$config_dir"

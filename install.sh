@@ -4,7 +4,7 @@ set -e
 REPO="https://github.com/atheeq-rhxn/msnap.git"
 TMP="$(mktemp -d)"
 BIN_DIR="$HOME/.local/bin"
-CONFIG_DIR="$HOME/.config/msnap"
+CONFIG_DIR="${XDG_CONFIG_HOME:-$HOME/.config}/msnap"
 
 echo "Cloning msnap…"
 git clone --depth=1 "$REPO" "$TMP"
