@@ -89,6 +89,7 @@ qs -p ~/.config/msnap/gui
 | `J` / `K` | Switch mode (Screenshot/Record) |
 | `Tab` | Toggle mode |
 | `Enter` / `Space` | Execute action |
+| `Shift+Enter` | Quick capture (skip menu and execute immediately) |
 | `P` | Toggle pointer (screenshot only) |
 | `E` | Toggle annotation (screenshot only) |
 | `A` | Toggle system audio (recording only) |
@@ -123,7 +124,7 @@ Default settings are stored in `~/.config/msnap/`:
 
 * **`mcast.conf`**: Sets `output_dir` (default: `~/Videos/Screencasts`) and `filename_pattern`.
 * **`mshot.conf`**: Sets `output_dir` (default: `~/Pictures/Screenshots`), `filename_pattern`, and `pointer_default`.
-* **`gui.conf`**: Theme configuration (colors, accents, alphas) for the GUI interface.
+* **`gui.conf`**: Theme (colors, accents, alphas) and behaviour (quick_capture).
 
 ## Development
 
