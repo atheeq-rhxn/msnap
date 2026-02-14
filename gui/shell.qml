@@ -111,6 +111,46 @@ PanelWindow {
   WlrLayershell.namespace: "msnap"
   WlrLayershell.exclusionMode: ExclusionMode.Ignore
 
+  property bool isQuitting: false
+  property bool panelVisible: false
+
+  Process {
+    id: wayfreezeProcess
+    command: ["wayfreeze", "--enable-keyboard"]
+    running: false
+  }
+
+  Timer {
+    id: showPanelTimer
+    interval: 100
+    repeat: false
+    onTriggered: {
+      root.visible = false
+      panelVisible = true
+      Qt.callLater(function() {
+        root.visible = true
+        if (mainContent.visible) {
+          mainContent.forceActiveFocus()
+        }
+      })
+    }
+  }
+
+  onPanelVisibleChanged: {
+  }
+
+  function activateFreeze() {
+    panelVisible = false
+    wayfreezeProcess.running = true
+    showPanelTimer.start()
+  }
+
+  function deactivateFreeze() {
+    showPanelTimer.stop()
+    wayfreezeProcess.running = false
+    panelVisible = true
+  }
+
   // State properties
   property bool isScreenshotMode: true
   property string captureMode: "region"
@@ -145,8 +185,15 @@ PanelWindow {
 
   onIsScreenshotModeChanged: {
     isRegionSelected = false;
+    
     if (!isScreenshotMode && captureMode === "window") {
       captureMode = "region";
+    }
+
+    if (isScreenshotMode) {
+      activateFreeze()
+    } else {
+      deactivateFreeze()
     }
   }
 
@@ -174,6 +221,8 @@ PanelWindow {
   }
 
   function close() {
+    isQuitting = true;
+    wayfreezeProcess.running = false
     visible = false;
     Qt.quit();
   }
@@ -343,8 +392,10 @@ PanelWindow {
   }
 
   Item {
+    id: mainContent
     anchors.fill: parent
     focus: true
+    visible: root.panelVisible
 
     // Navigation helper functions
     function getAvailableModes() {
@@ -422,9 +473,11 @@ PanelWindow {
       }
     }
 
-    onVisibleChanged: if (visible)
-                        forceActiveFocus()
-    Component.onCompleted: forceActiveFocus()
+    onVisibleChanged: {
+      if (visible) {
+        forceActiveFocus()
+      }
+    }
 
     MouseArea {
       anchors.fill: parent
@@ -658,6 +711,15 @@ PanelWindow {
     onActiveFocusChanged: {
       if (!activeFocus && visible && !regionSelector.visible && !isRecordingActive) {
         root.close();
+      }
+    }
+
+    Component.onCompleted: {
+      forceActiveFocus();
+      if (root.isScreenshotMode) {
+        activateFreeze()
+      } else {
+        panelVisible = true
       }
     }
   }
