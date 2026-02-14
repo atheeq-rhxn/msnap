@@ -111,46 +111,6 @@ PanelWindow {
   WlrLayershell.namespace: "msnap"
   WlrLayershell.exclusionMode: ExclusionMode.Ignore
 
-  property bool isQuitting: false
-  property bool panelVisible: false
-
-  Process {
-    id: wayfreezeProcess
-    command: ["wayfreeze", "--enable-keyboard"]
-    running: false
-  }
-
-  Timer {
-    id: showPanelTimer
-    interval: 100
-    repeat: false
-    onTriggered: {
-      root.visible = false
-      panelVisible = true
-      Qt.callLater(function() {
-        root.visible = true
-        if (mainContent.visible) {
-          mainContent.forceActiveFocus()
-        }
-      })
-    }
-  }
-
-  onPanelVisibleChanged: {
-  }
-
-  function activateFreeze() {
-    panelVisible = false
-    wayfreezeProcess.running = true
-    showPanelTimer.start()
-  }
-
-  function deactivateFreeze() {
-    showPanelTimer.stop()
-    wayfreezeProcess.running = false
-    panelVisible = true
-  }
-
   // State properties
   property bool isScreenshotMode: true
   property string captureMode: "region"
@@ -175,7 +135,60 @@ PanelWindow {
   readonly property color accentColor: isScreenshotMode ? Config.ssAccent : Config.recAccent
   readonly property var captureModes: ["region", "window", "screen"]
 
-  // Helper function for accent background
+  property string freezeState: "idle"
+
+  function enterFreeze() {
+      if (freezeState !== "idle")
+          return
+
+      freezeState = "freezing"
+      root.visible = false
+
+      if (!wayfreezeProcess.running) {
+          wayfreezeProcess.running = true
+      }
+  }
+
+  function exitFreeze() {
+      freezeState = "idle"
+      root.visible = true
+      mainContent.forceActiveFocus()
+  }
+
+  Process {
+      id: wayfreezeProcess
+
+      command: [
+          "wayfreeze",
+          "--enable-keyboard",
+          "--after-freeze-cmd", "echo frozen"
+      ]
+
+      running: false
+
+      stdout: SplitParser {
+          onRead: data => {
+              if (data.indexOf("frozen") !== -1) {
+                  freezeState = "frozen"
+                  root.visible = true
+                  mainContent.forceActiveFocus()
+              }
+          }
+      }
+
+      onExited: (code, status) => {
+          if (freezeState !== "idle") {
+              exitFreeze()
+          }
+      }
+  }
+
+  Component.onCompleted: {
+      if (isScreenshotMode) {
+          enterFreeze();
+      }
+  }
+
   function accentBg(mode) {
     const c = mode ? Config.ssAccent : Config.recAccent;
     return Qt.rgba(c.r, c.g, c.b, 0.13);
@@ -185,15 +198,18 @@ PanelWindow {
 
   onIsScreenshotModeChanged: {
     isRegionSelected = false;
-    
+
     if (!isScreenshotMode && captureMode === "window") {
-      captureMode = "region";
+        captureMode = "region";
     }
 
     if (isScreenshotMode) {
-      activateFreeze()
+        enterFreeze();
     } else {
-      deactivateFreeze()
+        if (wayfreezeProcess.running)
+            wayfreezeProcess.running = false;
+
+        exitFreeze();
     }
   }
 
@@ -221,8 +237,7 @@ PanelWindow {
   }
 
   function close() {
-    isQuitting = true;
-    wayfreezeProcess.running = false
+    wayfreezeProcess.running = false;
     visible = false;
     Qt.quit();
   }
@@ -294,9 +309,13 @@ PanelWindow {
                            isRegionSelected = true;
                            regionSelector.close();
                            root.visible = true;
+                           mainContent.forceActiveFocus();
                          }
 
-    onCancelled: root.visible = true
+    onCancelled: {
+        root.visible = true;
+        mainContent.forceActiveFocus();
+    }
   }
 
   PanelWindow {
@@ -395,7 +414,6 @@ PanelWindow {
     id: mainContent
     anchors.fill: parent
     focus: true
-    visible: root.panelVisible
 
     // Navigation helper functions
     function getAvailableModes() {
@@ -473,11 +491,9 @@ PanelWindow {
       }
     }
 
-    onVisibleChanged: {
-      if (visible) {
-        forceActiveFocus()
-      }
-    }
+    onVisibleChanged: if (visible)
+                        forceActiveFocus()
+    Component.onCompleted: forceActiveFocus()
 
     MouseArea {
       anchors.fill: parent
@@ -705,21 +721,6 @@ PanelWindow {
             }
           }
         }
-      }
-    }
-
-    onActiveFocusChanged: {
-      if (!activeFocus && visible && !regionSelector.visible && !isRecordingActive) {
-        root.close();
-      }
-    }
-
-    Component.onCompleted: {
-      forceActiveFocus();
-      if (root.isScreenshotMode) {
-        activateFreeze()
-      } else {
-        panelVisible = true
       }
     }
   }
