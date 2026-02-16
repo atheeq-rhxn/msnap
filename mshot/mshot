@@ -138,7 +138,7 @@ mshot_usage() {
     echo
 
     # :flag.usage
-    printf "  %s\n" "--no-copy"
+    printf "  %s\n" "--no-copy, -n"
     printf "    Skip copying screenshot to clipboard\n"
     echo
 
@@ -493,7 +493,7 @@ parse_requirements() {
         ;;
 
       # :flag.case
-      --no-copy)
+      --no-copy | -n)
 
         # :flag.case_no_arg
         args['--no-copy']=1

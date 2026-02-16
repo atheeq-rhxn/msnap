@@ -39,6 +39,7 @@ flags:
   help: Capture screenshot of the active window
   conflicts: [--region, --geometry]
 - long: --no-copy
+  short: -n
   help: Skip copying screenshot to clipboard
 - long: --only-copy
   short: -c
