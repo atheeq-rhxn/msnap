@@ -2,6 +2,10 @@ name: mcast
 help: Mango cast cli tool
 version: 0.1.0
 
+dependencies:
+- gpu-screen-recorder
+- slurp
+
 flags:
 - long: --region
   short: -r
