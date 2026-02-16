@@ -4,52 +4,49 @@ filename="$(date +"$filename_pattern")"
 filepath="$output_dir/$filename"
 mkdir -p "$output_dir"
 
-cmd="grim"
+cmd=(grim)
 
 pointer_default="${ini[pointer_default]:-false}"
-pointer_enabled=false
 if [[ $pointer_default == true ]] || [[ ${args[--pointer]} ]]; then
-  pointer_enabled=true
+  cmd+=(-c)
 fi
 
-if [[ $pointer_enabled == true ]]; then
-  cmd="$cmd -c"
-fi
-
-copy_enabled=true
-if [[ ${args[--no-copy]} ]]; then
-  copy_enabled=false
-fi
-window_capture=false
 if [[ ${args[--window]} ]]; then
-  window_capture=true
-fi
-if [[ $window_capture == true ]]; then
   geometry=$(mmsg -x | awk '/x / {x=$3} /y / {y=$3} /width / {w=$3} /height / {h=$3} END {print x","y" "w"x"h}')
   if [[ -z "$geometry" ]]; then
     echo "Error: No active window found or mmsg failed." >&2
     exit 1
   fi
-  cmd="$cmd -g \"$geometry\""
+  cmd+=(-g "$geometry")
 elif [[ ${args[--geometry]} ]]; then
-  cmd="$cmd -g \"${args[--geometry]}\""
-elif [[ ${args[--region]} ]]; then
-  cmd="slurp -d | $cmd -g-"
+  cmd+=(-g "${args[--geometry]}")
 fi
 
-cmd="$cmd \"$filepath\""
+if [[ ${args[--region]} ]]; then
+  slurp -d | grim -g- "$filepath"
+else
+  "${cmd[@]}" "$filepath"
+fi
 
 if [[ ${args[--freeze]} ]]; then
-  cmd="still -c '$cmd'"
+  freeze_cmd="grim"
+  for arg in "${cmd[@]:1}"; do
+    freeze_cmd="$freeze_cmd $(printf '%q' "$arg")"
+  done
+  freeze_cmd="$freeze_cmd $(printf '%q' "$filepath")"
+  still -c "$freeze_cmd"
 fi
+
 if [[ ${args[--annotate]} ]]; then
-  cmd="$cmd && satty --filename \"$filepath\" --output-filename \"$filepath\" --actions-on-enter save-to-file --early-exit --disable-notifications"
+  satty --filename "$filepath" --output-filename "$filepath" \
+    --actions-on-enter save-to-file --early-exit --disable-notifications
 fi
-eval "$cmd"
-if [[ $copy_enabled == true ]]; then
+
+if [[ ! ${args[--no-copy]} ]]; then
   wl-copy < "$filepath"
   message="Image saved in <i>${filepath}</i> and copied to the clipboard."
 else
   message="Image saved in <i>${filepath}</i>."
 fi
+
 notify-send "Screenshot saved" "${message}" -i "${filepath}" -a mshot
