@@ -12,13 +12,9 @@ fi
 # :command.root_command
 root_command() {
   # src/root_command.sh
-  set -euo pipefail
-
   output_dir="${args[--output]:-${ini[output_dir]:-${XDG_VIDEOS_DIR:-$HOME/Videos}/Screencasts}}"
   filename_pattern="${args[--filename]:-${ini[filename_pattern]:-%Y%m%d%H%M%S.mp4}}"
   toggle_mode="${args[--toggle]:-}"
-
-  command -v gpu-screen-recorder >/dev/null || { echo "Error: gpu-screen-recorder not installed"; exit 1; }
 
   recording_pid_file="/tmp/mcast.pid"
   recording_filepath_file="/tmp/mcast.filepath"
@@ -28,35 +24,36 @@ root_command() {
     if [[ ${args[--geometry]:-} ]]; then
       geometry="${args[--geometry]}"
     elif [[ ${args[--region]:-} ]]; then
-      geometry="$(slurp -d)" || { echo "Error: Failed to select region"; exit 1; }
+      geometry="$(slurp -d)" || { echo "Error: Failed to select region" >&2; exit 1; }
     fi
 
-    cmd=""
-    local audio_flags=""
-    if [[ ${args[--audio]:-} && ${args[--mic]:-} ]]; then
-      local audio_device="${args[--audio-device]:-default_output}"
-      local mic_device="${args[--mic-device]:-default_input}"
-      audio_flags=" -a \"$audio_device|$mic_device\""
-    elif [[ ${args[--audio]:-} ]]; then
-      local device="${args[--audio-device]:-default_output}"
-      audio_flags=" -a \"$device\""
-    elif [[ ${args[--mic]:-} ]]; then
-      local device="${args[--mic-device]:-default_input}"
-      audio_flags=" -a \"$device\""
-    fi
+    cmd=(gpu-screen-recorder)
+
     if [[ -n "$geometry" ]]; then
       local x y w h
       IFS=',x ' read -r x y w h <<< "$geometry"
-      local region_arg="-region ${w}x${h}+${x}+${y}"
-      cmd="gpu-screen-recorder -w region $region_arg -f 60$audio_flags -o \"$filepath\""
+      cmd+=(-w region -region "${w}x${h}+${x}+${y}")
     else
-      cmd="gpu-screen-recorder -w screen -f 60$audio_flags -o \"$filepath\""
+      cmd+=(-w screen)
     fi
+
+    if [[ ${args[--audio]:-} && ${args[--mic]:-} ]]; then
+      cmd+=(-a "${args[--audio-device]:-default_output}|${args[--mic-device]:-default_input}")
+    elif [[ ${args[--audio]:-} ]]; then
+      cmd+=(-a "${args[--audio-device]:-default_output}")
+    elif [[ ${args[--mic]:-} ]]; then
+      cmd+=(-a "${args[--mic-device]:-default_input}")
+    fi
+
+    cmd+=(-o "$filepath")
   }
 
   if [[ -n "$toggle_mode" ]]; then
-    if [[ -f "$recording_pid_file" ]] && kill -0 "$(<"$recording_pid_file")" 2>/dev/null; then
-      kill "$(<"$recording_pid_file")"
+    if [[ -f "$recording_pid_file" ]]; then
+      pid=$(<"$recording_pid_file")
+      if kill -0 "$pid" 2>/dev/null; then
+        kill -2 "$pid"
+      fi
       rm -f "$recording_pid_file"
       if [[ -f "$recording_filepath_file" ]]; then
         filepath=$(<"$recording_filepath_file")
@@ -70,7 +67,7 @@ root_command() {
       echo "$filepath" > "$recording_filepath_file"
 
       build_cmd
-      eval "$cmd > /dev/null 2>&1 &"
+      "${cmd[@]}" > /dev/null 2>&1 &
       echo $! > "$recording_pid_file"
     fi
   else
@@ -79,10 +76,9 @@ root_command() {
     mkdir -p "$output_dir"
 
     build_cmd
-    eval "$cmd"
+    "${cmd[@]}"
     notify-send "Recording saved" "Recording saved in <i>${filepath}</i>." -a mcast
   fi
-
 }
 
 # :command.version_command
@@ -109,11 +105,13 @@ mcast_usage() {
     # :flag.usage
     printf "  %s\n" "--region, -r"
     printf "    Record selected region (interactive selection)\n"
+    printf "    %s\n" "Conflicts: --geometry"
     echo
 
     # :flag.usage
-    printf "  %s\n" "--geometry, -g SPEC"
-    printf "    Record region with direct geometry in \"x,y wxh\" format\n"
+    printf "  %s\n" "--geometry, -g X,Y WXH"
+    printf "    Record region with direct geometry\n"
+    printf "    %s\n" "Conflicts: --region"
     echo
 
     # :flag.usage
@@ -305,6 +303,16 @@ ini_keys() {
   for a in "${keys[@]}"; do echo "$a"; done | sort
 }
 
+# src/lib/validate_geometry_format.sh
+validate_geometry_format() {
+  local input="$1"
+
+  # Pattern: X,Y WxH where X, Y, W, H are non-negative integers
+  if [[ ! "$input" =~ ^[0-9]+,[0-9]+\ [0-9]+x[0-9]+$ ]]; then
+    echo "invalid format: Expected 'X,Y WxH' (e.g., '100,200 800x600')"
+  fi
+}
+
 # :command.command_functions
 
 # :command.parse_requirements
@@ -333,6 +341,28 @@ parse_requirements() {
     esac
   done
 
+  # :command.dependencies_filter
+  missing_deps=
+  # :dependency.filter
+  if ! command -v gpu-screen-recorder >/dev/null 2>&1; then
+    printf "missing dependency: gpu-screen-recorder\n" >&2
+    missing_deps=1
+  else
+    deps['gpu-screen-recorder']="$(command -v gpu-screen-recorder | head -n1)"
+  fi
+
+  # :dependency.filter
+  if ! command -v slurp >/dev/null 2>&1; then
+    printf "missing dependency: slurp\n" >&2
+    missing_deps=1
+  else
+    deps['slurp']="$(command -v slurp | head -n1)"
+  fi
+
+  if [[ -n $missing_deps ]]; then
+    exit 1
+  fi
+
   # :command.command_filter
   action="root"
 
@@ -342,6 +372,11 @@ parse_requirements() {
     case "$key" in
       # :flag.case
       --region | -r)
+        # :flag.conflicts
+        if [[ -n "${args['--geometry']:-}" ]]; then
+          printf "conflicting options: %s cannot be used with %s\n" "$key" "--geometry" >&2
+          exit 1
+        fi
 
         # :flag.case_no_arg
         args['--region']=1
@@ -350,6 +385,11 @@ parse_requirements() {
 
       # :flag.case
       --geometry | -g)
+        # :flag.conflicts
+        if [[ -n "${args['--region']:-}" ]]; then
+          printf "conflicting options: %s cannot be used with %s\n" "$key" "--region" >&2
+          exit 1
+        fi
 
         # :flag.case_arg
         if [[ -n ${2+x} ]]; then
@@ -357,7 +397,7 @@ parse_requirements() {
           shift
           shift
         else
-          printf "%s\n" "--geometry requires an argument: --geometry, -g SPEC" >&2
+          printf "%s\n" "--geometry requires an argument: --geometry, -g X,Y WXH" >&2
           exit 1
         fi
         ;;
@@ -457,6 +497,16 @@ parse_requirements() {
 
     esac
   done
+
+  # :command.validations
+  # :flag.validations
+  if [[ -v args['--geometry'] ]]; then
+    validation_output="$(validate_geometry_format "${args['--geometry']:-}")"
+    if [[ -n "${validation_output}" ]]; then
+      printf "validation error in %s:\n%s\n" "--geometry, -g X,Y WXH" "$validation_output" >&2
+      exit 1
+    fi
+  fi
 
 }
 
