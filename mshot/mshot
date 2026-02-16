@@ -18,54 +18,51 @@ root_command() {
   filepath="$output_dir/$filename"
   mkdir -p "$output_dir"
 
-  cmd="grim"
+  cmd=(grim)
 
   pointer_default="${ini[pointer_default]:-false}"
-  pointer_enabled=false
   if [[ $pointer_default == true ]] || [[ ${args[--pointer]} ]]; then
-    pointer_enabled=true
+    cmd+=(-c)
   fi
 
-  if [[ $pointer_enabled == true ]]; then
-    cmd="$cmd -c"
-  fi
-
-  copy_enabled=true
-  if [[ ${args[--no-copy]} ]]; then
-    copy_enabled=false
-  fi
-  window_capture=false
   if [[ ${args[--window]} ]]; then
-    window_capture=true
-  fi
-  if [[ $window_capture == true ]]; then
     geometry=$(mmsg -x | awk '/x / {x=$3} /y / {y=$3} /width / {w=$3} /height / {h=$3} END {print x","y" "w"x"h}')
     if [[ -z "$geometry" ]]; then
       echo "Error: No active window found or mmsg failed." >&2
       exit 1
     fi
-    cmd="$cmd -g \"$geometry\""
+    cmd+=(-g "$geometry")
   elif [[ ${args[--geometry]} ]]; then
-    cmd="$cmd -g \"${args[--geometry]}\""
-  elif [[ ${args[--region]} ]]; then
-    cmd="slurp -d | $cmd -g-"
+    cmd+=(-g "${args[--geometry]}")
   fi
 
-  cmd="$cmd \"$filepath\""
+  if [[ ${args[--region]} ]]; then
+    slurp -d | grim -g- "$filepath"
+  else
+    "${cmd[@]}" "$filepath"
+  fi
 
   if [[ ${args[--freeze]} ]]; then
-    cmd="still -c '$cmd'"
+    freeze_cmd="grim"
+    for arg in "${cmd[@]:1}"; do
+      freeze_cmd="$freeze_cmd $(printf '%q' "$arg")"
+    done
+    freeze_cmd="$freeze_cmd $(printf '%q' "$filepath")"
+    still -c "$freeze_cmd"
   fi
+
   if [[ ${args[--annotate]} ]]; then
-    cmd="$cmd && satty --filename \"$filepath\" --output-filename \"$filepath\" --actions-on-enter save-to-file --early-exit --disable-notifications"
+    satty --filename "$filepath" --output-filename "$filepath" \
+      --actions-on-enter save-to-file --early-exit --disable-notifications
   fi
-  eval "$cmd"
-  if [[ $copy_enabled == true ]]; then
+
+  if [[ ! ${args[--no-copy]} ]]; then
     wl-copy < "$filepath"
     message="Image saved in <i>${filepath}</i> and copied to the clipboard."
   else
     message="Image saved in <i>${filepath}</i>."
   fi
+
   notify-send "Screenshot saved" "${message}" -i "${filepath}" -a mshot
 
 }
@@ -94,11 +91,13 @@ mshot_usage() {
     # :flag.usage
     printf "  %s\n" "--region, -r"
     printf "    Take screenshot of selected region (interactive selection)\n"
+    printf "    %s\n" "Conflicts: --geometry, --window"
     echo
 
     # :flag.usage
-    printf "  %s\n" "--geometry, -g SPEC"
-    printf "    Capture region with direct geometry in \"x,y wxh\" format\n"
+    printf "  %s\n" "--geometry, -g X,Y WXH"
+    printf "    Capture region with direct geometry\n"
+    printf "    %s\n" "Conflicts: --region, --window"
     echo
 
     # :flag.usage
@@ -124,6 +123,7 @@ mshot_usage() {
     # :flag.usage
     printf "  %s\n" "--window, -w"
     printf "    Capture screenshot of the active window\n"
+    printf "    %s\n" "Conflicts: --region, --geometry"
     echo
 
     # :flag.usage
@@ -290,6 +290,16 @@ ini_keys() {
   for a in "${keys[@]}"; do echo "$a"; done | sort
 }
 
+# src/lib/validate_geometry_format.sh
+validate_geometry_format() {
+  local input="$1"
+
+  # Pattern: X,Y WxH where X, Y, W, H are non-negative integers
+  if [[ ! "$input" =~ ^[0-9]+,[0-9]+\ [0-9]+x[0-9]+$ ]]; then
+    echo "invalid format: Expected 'X,Y WxH' (e.g., '100,200 800x600')"
+  fi
+}
+
 # :command.command_functions
 
 # :command.parse_requirements
@@ -318,6 +328,52 @@ parse_requirements() {
     esac
   done
 
+  # :command.dependencies_filter
+  missing_deps=
+  # :dependency.filter
+  if ! command -v grim >/dev/null 2>&1; then
+    printf "missing dependency: grim\n" >&2
+    missing_deps=1
+  else
+    deps['grim']="$(command -v grim | head -n1)"
+  fi
+
+  # :dependency.filter
+  if ! command -v slurp >/dev/null 2>&1; then
+    printf "missing dependency: slurp\n" >&2
+    missing_deps=1
+  else
+    deps['slurp']="$(command -v slurp | head -n1)"
+  fi
+
+  # :dependency.filter
+  if ! command -v wl-copy >/dev/null 2>&1; then
+    printf "missing dependency: wl-copy\n" >&2
+    missing_deps=1
+  else
+    deps['wl-copy']="$(command -v wl-copy | head -n1)"
+  fi
+
+  # :dependency.filter
+  if ! command -v notify-send >/dev/null 2>&1; then
+    printf "missing dependency: notify-send\n" >&2
+    missing_deps=1
+  else
+    deps['notify-send']="$(command -v notify-send | head -n1)"
+  fi
+
+  # :dependency.filter
+  if ! command -v mmsg >/dev/null 2>&1; then
+    printf "missing dependency: mmsg\n" >&2
+    missing_deps=1
+  else
+    deps['mmsg']="$(command -v mmsg | head -n1)"
+  fi
+
+  if [[ -n $missing_deps ]]; then
+    exit 1
+  fi
+
   # :command.command_filter
   action="root"
 
@@ -327,6 +383,13 @@ parse_requirements() {
     case "$key" in
       # :flag.case
       --region | -r)
+        # :flag.conflicts
+        for conflict in --geometry --window; do
+          if [[ -n "${args[$conflict]:-}" ]]; then
+            printf "conflicting options: %s cannot be used with %s\n" "$key" "$conflict" >&2
+            exit 1
+          fi
+        done
 
         # :flag.case_no_arg
         args['--region']=1
@@ -335,6 +398,13 @@ parse_requirements() {
 
       # :flag.case
       --geometry | -g)
+        # :flag.conflicts
+        for conflict in --region --window; do
+          if [[ -n "${args[$conflict]:-}" ]]; then
+            printf "conflicting options: %s cannot be used with %s\n" "$key" "$conflict" >&2
+            exit 1
+          fi
+        done
 
         # :flag.case_arg
         if [[ -n ${2+x} ]]; then
@@ -342,7 +412,7 @@ parse_requirements() {
           shift
           shift
         else
-          printf "%s\n" "--geometry requires an argument: --geometry, -g SPEC" >&2
+          printf "%s\n" "--geometry requires an argument: --geometry, -g X,Y WXH" >&2
           exit 1
         fi
         ;;
@@ -393,6 +463,13 @@ parse_requirements() {
 
       # :flag.case
       --window | -w)
+        # :flag.conflicts
+        for conflict in --region --geometry; do
+          if [[ -n "${args[$conflict]:-}" ]]; then
+            printf "conflicting options: %s cannot be used with %s\n" "$key" "$conflict" >&2
+            exit 1
+          fi
+        done
 
         # :flag.case_no_arg
         args['--window']=1
@@ -430,6 +507,16 @@ parse_requirements() {
 
     esac
   done
+
+  # :command.validations
+  # :flag.validations
+  if [[ -v args['--geometry'] ]]; then
+    validation_output="$(validate_geometry_format "${args['--geometry']:-}")"
+    if [[ -n "${validation_output}" ]]; then
+      printf "validation error in %s:\n%s\n" "--geometry, -g X,Y WXH" "$validation_output" >&2
+      exit 1
+    fi
+  fi
 
 }
 
