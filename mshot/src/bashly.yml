@@ -16,9 +16,10 @@ flags:
   conflicts: [--geometry, --window]
 - long: --geometry
   short: -g
-  arg: spec
-  help: Capture region with direct geometry in "x,y wxh" format
+  arg: x,y WxH
+  help: Capture region with direct geometry
   conflicts: [--region, --window]
+  validate: geometry_format
 - long: --pointer
   short: -p
   help: Include pointer in screenshot
