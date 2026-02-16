@@ -13,10 +13,12 @@ flags:
 - long: --region
   short: -r
   help: Take screenshot of selected region (interactive selection)
+  conflicts: [--geometry, --window]
 - long: --geometry
   short: -g
   arg: spec
   help: Capture region with direct geometry in "x,y wxh" format
+  conflicts: [--region, --window]
 - long: --pointer
   short: -p
   help: Include pointer in screenshot
@@ -34,6 +36,7 @@ flags:
 - long: --window
   short: -w
   help: Capture screenshot of the active window
+  conflicts: [--region, --geometry]
 - long: --no-copy
   help: Skip copying screenshot to clipboard
 - long: --freeze
