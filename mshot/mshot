@@ -12,11 +12,16 @@ fi
 # :command.root_command
 root_command() {
   # src/root_command.sh
-  output_dir="${args[--output]:-${ini[output_dir]:-${XDG_PICTURES_DIR:-$HOME/Pictures}/Screenshots}}"
-  filename_pattern="${args[--filename]:-${ini[filename_pattern]:-%Y%m%d%H%M%S.png}}"
-  filename="$(date +"$filename_pattern")"
-  filepath="$output_dir/$filename"
-  mkdir -p "$output_dir"
+  if [[ ${args[--only-copy]} ]]; then
+    filepath="$(mktemp --suffix=.png)"
+    trap 'rm -f "$filepath"' EXIT
+  else
+    output_dir="${args[--output]:-${ini[output_dir]:-${XDG_PICTURES_DIR:-$HOME/Pictures}/Screenshots}}"
+    filename_pattern="${args[--filename]:-${ini[filename_pattern]:-%Y%m%d%H%M%S.png}}"
+    filename="$(date +"$filename_pattern")"
+    filepath="$output_dir/$filename"
+    mkdir -p "$output_dir"
+  fi
 
   cmd=(grim)
 
@@ -56,14 +61,20 @@ root_command() {
       --actions-on-enter save-to-file --early-exit --disable-notifications
   fi
 
-  if [[ ! ${args[--no-copy]} ]]; then
+  notify_title="Screenshot saved"
+
+  if [[ ${args[--only-copy]} ]]; then
+    wl-copy < "$filepath"
+    message="Image copied to the clipboard."
+    notify_title="Screenshot captured"
+  elif [[ ! ${args[--no-copy]} ]]; then
     wl-copy < "$filepath"
     message="Image saved in <i>${filepath}</i> and copied to the clipboard."
   else
     message="Image saved in <i>${filepath}</i>."
   fi
 
-  notify-send "Screenshot saved" "${message}" -i "${filepath}" -a mshot
+  notify-send "$notify_title" "${message}" -i "${filepath}" -a mshot
 
 }
 
@@ -129,6 +140,11 @@ mshot_usage() {
     # :flag.usage
     printf "  %s\n" "--no-copy"
     printf "    Skip copying screenshot to clipboard\n"
+    echo
+
+    # :flag.usage
+    printf "  %s\n" "--only-copy, -c"
+    printf "    Copy screenshot to clipboard without saving file\n"
     echo
 
     # :flag.usage
@@ -481,6 +497,14 @@ parse_requirements() {
 
         # :flag.case_no_arg
         args['--no-copy']=1
+        shift
+        ;;
+
+      # :flag.case
+      --only-copy | -c)
+
+        # :flag.case_no_arg
+        args['--only-copy']=1
         shift
         ;;
 

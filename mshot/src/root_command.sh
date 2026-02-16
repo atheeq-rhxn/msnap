@@ -1,8 +1,13 @@
-output_dir="${args[--output]:-${ini[output_dir]:-${XDG_PICTURES_DIR:-$HOME/Pictures}/Screenshots}}"
-filename_pattern="${args[--filename]:-${ini[filename_pattern]:-%Y%m%d%H%M%S.png}}"
-filename="$(date +"$filename_pattern")"
-filepath="$output_dir/$filename"
-mkdir -p "$output_dir"
+if [[ ${args[--only-copy]} ]]; then
+  filepath="$(mktemp --suffix=.png)"
+  trap 'rm -f "$filepath"' EXIT
+else
+  output_dir="${args[--output]:-${ini[output_dir]:-${XDG_PICTURES_DIR:-$HOME/Pictures}/Screenshots}}"
+  filename_pattern="${args[--filename]:-${ini[filename_pattern]:-%Y%m%d%H%M%S.png}}"
+  filename="$(date +"$filename_pattern")"
+  filepath="$output_dir/$filename"
+  mkdir -p "$output_dir"
+fi
 
 cmd=(grim)
 
@@ -42,11 +47,17 @@ if [[ ${args[--annotate]} ]]; then
     --actions-on-enter save-to-file --early-exit --disable-notifications
 fi
 
-if [[ ! ${args[--no-copy]} ]]; then
+notify_title="Screenshot saved"
+
+if [[ ${args[--only-copy]} ]]; then
+  wl-copy < "$filepath"
+  message="Image copied to the clipboard."
+  notify_title="Screenshot captured"
+elif [[ ! ${args[--no-copy]} ]]; then
   wl-copy < "$filepath"
   message="Image saved in <i>${filepath}</i> and copied to the clipboard."
 else
   message="Image saved in <i>${filepath}</i>."
 fi
 
-notify-send "Screenshot saved" "${message}" -i "${filepath}" -a mshot
+notify-send "$notify_title" "${message}" -i "${filepath}" -a mshot
