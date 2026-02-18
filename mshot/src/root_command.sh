@@ -11,10 +11,9 @@ fi
 
 cmd=(grim)
 
-pointer_default="${ini[pointer_default]:-false}"
-if [[ $pointer_default == true ]] || [[ ${args[--pointer]} ]]; then
-  cmd+=(-c)
-fi
+use_pointer=""
+[[ ${ini[pointer_default]} == true ]] || [[ ${args[--pointer]} ]] && use_pointer=true
+[[ $use_pointer ]] && cmd+=(-c)
 
 if [[ ${args[--window]} ]]; then
   geometry=$(mmsg -x | awk '/x / {x=$3} /y / {y=$3} /width / {w=$3} /height / {h=$3} END {print x","y" "w"x"h}')
@@ -27,19 +26,16 @@ elif [[ ${args[--geometry]} ]]; then
   cmd+=(-g "${args[--geometry]}")
 fi
 
-if [[ ${args[--region]} ]]; then
-  slurp -d | grim -g- "$filepath"
+if [[ ${args[--freeze]} ]]; then
+  if [[ ${args[--region]} ]]; then
+    still ${use_pointer:+-p} -c "slurp -d | ${cmd[*]} -g- $(printf '%q' "$filepath")"
+  else
+    still ${use_pointer:+-p} -c "${cmd[*]} $(printf '%q' "$filepath")"
+  fi
+elif [[ ${args[--region]} ]]; then
+  slurp -d | "${cmd[@]}" -g- "$filepath"
 else
   "${cmd[@]}" "$filepath"
-fi
-
-if [[ ${args[--freeze]} ]]; then
-  freeze_cmd="grim"
-  for arg in "${cmd[@]:1}"; do
-    freeze_cmd="$freeze_cmd $(printf '%q' "$arg")"
-  done
-  freeze_cmd="$freeze_cmd $(printf '%q' "$filepath")"
-  still -c "$freeze_cmd"
 fi
 
 if [[ ${args[--annotate]} ]]; then
