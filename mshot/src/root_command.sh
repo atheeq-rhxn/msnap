@@ -28,9 +28,9 @@ fi
 
 if [[ ${args[--freeze]} ]]; then
   if [[ ${args[--region]} ]]; then
-    still ${use_pointer:+-p} -c "slurp -d | ${cmd[*]} -g- $(printf '%q' "$filepath")"
+    still ${use_pointer:+-p} -c "slurp -d | $(printf '%q ' "${cmd[@]}")-g- $(printf '%q' "$filepath")"
   else
-    still ${use_pointer:+-p} -c "${cmd[*]} $(printf '%q' "$filepath")"
+    still ${use_pointer:+-p} -c "$(printf '%q ' "${cmd[@]}")$(printf '%q' "$filepath")"
   fi
 elif [[ ${args[--region]} ]]; then
   slurp -d | "${cmd[@]}" -g- "$filepath"
