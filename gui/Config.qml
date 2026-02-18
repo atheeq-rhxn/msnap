@@ -22,6 +22,9 @@ Singleton {
   property color instructionColor: "#ffffff"
   property real instructionAlpha: 0.65
 
+  // Behavior
+  property bool quickCapture: false
+
   // Paths - centralized configuration
   readonly property string homePath: Quickshell.env("HOME")
   readonly property string configPath: homePath + "/.config/msnap/gui.conf"
@@ -76,7 +79,9 @@ Singleton {
         const camelKey = key.replace(/_([a-z])/g, (_, letter) => letter.toUpperCase());
 
         if (camelKey in root) {
-          updates[camelKey] = value;
+          if (value === "true") updates[camelKey] = true;
+          else if (value === "false") updates[camelKey] = false;
+          else updates[camelKey] = value;
         }
       }
 

@@ -2,14 +2,24 @@ name: mshot
 help: Mango shot cli tool
 version: 0.1.0
 
+dependencies:
+- grim
+- slurp
+- wl-copy
+- notify-send
+- mmsg
+
 flags:
 - long: --region
   short: -r
   help: Take screenshot of selected region (interactive selection)
+  conflicts: [--geometry, --window]
 - long: --geometry
   short: -g
-  arg: spec
-  help: Capture region with direct geometry in "x,y wxh" format
+  arg: x,y WxH
+  help: Capture region with direct geometry
+  conflicts: [--region, --window]
+  validate: geometry_format
 - long: --pointer
   short: -p
   help: Include pointer in screenshot
@@ -27,8 +37,13 @@ flags:
 - long: --window
   short: -w
   help: Capture screenshot of the active window
+  conflicts: [--region, --geometry]
 - long: --no-copy
+  short: -n
   help: Skip copying screenshot to clipboard
+- long: --only-copy
+  short: -c
+  help: Copy screenshot to clipboard without saving file
 - long: --freeze
   short: -F
   help: Freeze the screen before taking screenshot

@@ -22,7 +22,7 @@ PanelWindow {
   WlrLayershell.namespace: "msnap"
   WlrLayershell.exclusionMode: ExclusionMode.Ignore
 
-  signal selectionComplete(int x, int y, int width, int height)
+  signal selectionComplete(int x, int y, int width, int height, bool quick)
   signal cancelled
 
   property bool isSelecting: false
@@ -129,9 +129,15 @@ PanelWindow {
     activeHandle = -1;
   }
 
-  function confirmSelection() {
+  function confirmSelection(quick) {
     if (hasSelection) {
-      selectionComplete(Math.round(selX * scaleFactor), Math.round(selY * scaleFactor), Math.round(selW * scaleFactor), Math.round(selH * scaleFactor));
+      selectionComplete(
+        Math.round(selX * scaleFactor), 
+        Math.round(selY * scaleFactor), 
+        Math.round(selW * scaleFactor), 
+        Math.round(selH * scaleFactor),
+        quick
+      );
     }
   }
 
@@ -164,7 +170,8 @@ PanelWindow {
                         root.close();
                         event.accepted = true;
                       } else if (event.key === Qt.Key_Return || event.key === Qt.Key_Enter) {
-                        root.confirmSelection();
+                        const isQuick = (event.modifiers & Qt.ShiftModifier) || Config.quickCapture;
+                        root.confirmSelection(isQuick);
                         event.accepted = true;
                       }
                     }

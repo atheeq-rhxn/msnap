@@ -301,16 +301,22 @@ PanelWindow {
   RegionSelector {
     id: regionSelector
 
-    onSelectionComplete: (x, y, w, h) => {
-                           selectedX = x;
-                           selectedY = y;
-                           selectedWidth = w;
-                           selectedHeight = h;
-                           isRegionSelected = true;
-                           regionSelector.close();
-                           root.visible = true;
-                           mainContent.forceActiveFocus();
-                         }
+     onSelectionComplete: (x, y, w, h, quick) => {
+                            selectedX = x;
+                            selectedY = y;
+                            selectedWidth = w;
+                            selectedHeight = h;
+                            isRegionSelected = true;
+                            regionSelector.close();
+
+                            if (quick) {
+                              root.visible = false;
+                              root.executeAction();
+                            } else {
+                              root.visible = true;
+                              mainContent.forceActiveFocus();
+                            }
+                          }
 
     onCancelled: {
         root.visible = true;
@@ -483,13 +489,7 @@ PanelWindow {
     Keys.onReturnPressed: root.executeAction()
     Keys.onEnterPressed: root.executeAction()
     Keys.onSpacePressed: root.executeAction()
-    Keys.onEscapePressed: {
-      if (isRecordingActive) {
-        stopRecording();
-      } else {
-        root.close();
-      }
-    }
+    Keys.onEscapePressed: root.close();
 
     onVisibleChanged: if (visible)
                         forceActiveFocus()

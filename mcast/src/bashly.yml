@@ -2,14 +2,21 @@ name: mcast
 help: Mango cast cli tool
 version: 0.1.0
 
+dependencies:
+- gpu-screen-recorder
+- slurp
+
 flags:
 - long: --region
   short: -r
   help: Record selected region (interactive selection)
+  conflicts: [--geometry]
 - long: --geometry
   short: -g
-  arg: spec
-  help: Record region with direct geometry in "x,y wxh" format
+  arg: x,y WxH
+  help: Record region with direct geometry
+  conflicts: [--region]
+  validate: geometry_format
 - long: --toggle
   short: -t
   help: Toggle recording on/off
