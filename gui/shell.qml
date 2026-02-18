@@ -420,13 +420,7 @@ PanelWindow {
     Keys.onReturnPressed: root.executeAction()
     Keys.onEnterPressed: root.executeAction()
     Keys.onSpacePressed: root.executeAction()
-    Keys.onEscapePressed: {
-      if (isRecordingActive) {
-        stopRecording();
-      } else {
-        root.close();
-      }
-    }
+    Keys.onEscapePressed: root.close();
 
     onVisibleChanged: if (visible)
                         forceActiveFocus()
