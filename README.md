@@ -27,7 +27,7 @@ https://github.com/user-attachments/assets/53a4c616-3a6f-4400-ae9c-a15e277e710f
 ### `mshot`
 
 * **Required**: [`grim`](https://gitlab.freedesktop.org/emersion/grim), [`slurp`](https://github.com/emersion/slurp), [`wl-copy`](https://github.com/bugaevc/wl-clipboard), [`notify-send`](https://gitlab.gnome.org/GNOME/libnotify)
-* **Optional**: [`still`](https://github.com/faergeek/still) (for freezing screen), [`satty`](https://github.com/gabm/Satty) (for annotations)
+* **Optional**: [`wayfreeze`](https://github.com/Jappie3/wayfreeze) (for freezing screen), [`satty`](https://github.com/gabm/Satty) (for annotations)
 
 ### `gui`
 
@@ -71,7 +71,7 @@ curl -fsSL https://raw.githubusercontent.com/atheeq-rhxn/msnap/main/install.sh |
 |  | `-o`, `--output` | `DIRECTORY` | Set the output directory |
 |  | `-f`, `--filename` | `NAME` | Set the output filename/pattern |
 |  | `--no-copy` | - | Skip copying to clipboard |
-|  | `-F`, `--freeze` | - | Freeze the screen before capturing (requires `still`) |
+|  | `-F`, `--freeze` | - | Freeze the screen before capturing (requires `wayfreeze`) |
 
 ### `gui`
 

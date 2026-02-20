@@ -27,10 +27,18 @@ elif [[ ${args[--geometry]} ]]; then
 fi
 
 if [[ ${args[--freeze]} ]]; then
+  cursor_flag=""
+  [[ -z $use_pointer ]] && cursor_flag="--hide-cursor"
   if [[ ${args[--region]} ]]; then
-    still ${use_pointer:+-p} -c "slurp -d | $(printf '%q ' "${cmd[@]}")-g- $(printf '%q' "$filepath")"
+    wayfreeze $cursor_flag & PID=$!
+    sleep .1
+    slurp -d | "${cmd[@]}" -g- "$filepath"
+    kill $PID 2>/dev/null || true
   else
-    still ${use_pointer:+-p} -c "$(printf '%q ' "${cmd[@]}")$(printf '%q' "$filepath")"
+    wayfreeze $cursor_flag & PID=$!
+    sleep .1
+    "${cmd[@]}" "$filepath"
+    kill $PID 2>/dev/null || true
   fi
 elif [[ ${args[--region]} ]]; then
   slurp -d | "${cmd[@]}" -g- "$filepath"
