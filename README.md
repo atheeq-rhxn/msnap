@@ -29,6 +29,8 @@ https://github.com/user-attachments/assets/53a4c616-3a6f-4400-ae9c-a15e277e710f
 * **Required**: [`grim`](https://gitlab.freedesktop.org/emersion/grim), [`slurp`](https://github.com/emersion/slurp), [`wl-copy`](https://github.com/bugaevc/wl-clipboard), [`notify-send`](https://gitlab.gnome.org/GNOME/libnotify)
 * **Optional**: [`wayfreeze`](https://github.com/Jappie3/wayfreeze) (for freezing screen), [`satty`](https://github.com/gabm/Satty) (for annotations)
 
+> **Note:** `wayfreeze` must be in your global PATH.
+
 ### `gui`
 
 GUI using `mcast` & `mshot` 
